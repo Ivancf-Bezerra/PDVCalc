@@ -1187,13 +1187,18 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
   padding: var(--space-3);
 }
 
-.pdv-top-items-card {
-  grid-column: 1 / -1;
+.pdv-chart-wrap {
+  position: relative;
+  width: 100%;
+  height: 280px;
 }
 
-.pdv-chart-card canvas {
-  width: 100% !important;
-  height: 260px !important;
+.pdv-chart-wrap canvas {
+  display: block;
+}
+
+.pdv-top-items-card {
+  grid-column: 1 / -1;
 }
 
 .pdv-top-items-list {

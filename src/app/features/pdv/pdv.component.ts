@@ -183,6 +183,7 @@ export class PdvComponent implements OnInit, OnDestroy {
 
   protected readonly dailyHourChartOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -204,39 +205,48 @@ export class PdvComponent implements OnInit, OnDestroy {
     },
   };
 
-  protected readonly dailyHourCountChartData = computed<ChartConfiguration<'bar'>['data']>(() => {
-    const orders = this.pdv.todayOrders().filter(o => !o.cancelled);
-    const labels: string[] = [];
-    const values: number[] = [];
-    for (let hour = 6; hour <= 22; hour++) {
-      labels.push(`${hour.toString().padStart(2, '0')}h`);
-      const count = orders.filter(o => new Date(o.createdAt).getHours() === hour).length;
-      values.push(count);
-    }
+  protected readonly dailyPaymentMethodChartData = computed<ChartConfiguration<'pie'>['data']>(() => {
+    const summary = this.dailySummary();
+    const labels = this.paymentMethods.map(m => this.paymentMethodLabels[m]);
+    const values = this.paymentMethods.map(m => summary.byMethod[m].total);
+
+    const backgroundColor = [
+      'rgba(16, 185, 129, 0.85)',   // dinheiro
+      'rgba(59, 130, 246, 0.85)',   // débito
+      'rgba(139, 92, 246, 0.85)',   // crédito
+      'rgba(251, 113, 133, 0.85)',  // pix
+      'rgba(148, 163, 184, 0.85)',  // outros
+    ];
+
     return {
       labels,
       datasets: [
         {
-          label: 'Pedidos por horário',
           data: values,
-          backgroundColor: 'rgba(59, 130, 246, 0.7)',
-          borderRadius: 6,
-          maxBarThickness: 20,
+          backgroundColor,
         },
       ],
     };
   });
 
-  protected readonly dailyHourCountChartOptions: ChartConfiguration<'bar'>['options'] = {
+  protected readonly dailyPaymentMethodChartOptions: ChartConfiguration<'pie'>['options'] = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
-      legend: { display: false },
-    },
-    scales: {
-      x: { grid: { display: false } },
-      y: {
-        grid: { color: '#e5e7eb' },
-        ticks: { precision: 0 },
+      legend: {
+        position: 'bottom',
+      },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const label = ctx.label ?? '';
+            const value = (ctx.parsed as number) ?? 0;
+            const dataset = ctx.dataset.data as number[];
+            const total = dataset.reduce((sum, v) => sum + (v ?? 0), 0);
+            const pct = total ? (value / total) * 100 : 0;
+            return `${label}: ${this.pdv.money(value)} (${pct.toFixed(1)}%)`;
+          },
+        },
       },
     },
   };
@@ -297,6 +307,7 @@ export class PdvComponent implements OnInit, OnDestroy {
 
   protected readonly monthlyDailyPaymentChartOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       tooltip: {
         callbacks: {
@@ -337,47 +348,54 @@ export class PdvComponent implements OnInit, OnDestroy {
       .slice(0, 15);
   });
 
-  protected readonly monthlyPaymentSummaryChartData = computed<ChartConfiguration<'bar'>['data']>(() => {
+  /** Gráfico B mensal: linha com valor bruto (receita total) de cada dia do mês, do dia 1 ao último. */
+  protected readonly monthlyDailyGrossChartData = computed<ChartConfiguration<'line'>['data']>(() => {
     const monthKey = this.pdv.getCurrentMonthKey();
-    const byMethod = this.pdv.getMonthlyPaymentsByMethod(monthKey);
-    const labels = this.paymentMethods.map(m => this.paymentMethodLabels[m]);
-    const values = this.paymentMethods.map(m => byMethod[m].total);
+    const [y, m] = monthKey.split('-').map(Number);
+    const lastDay = new Date(y, m, 0).getDate();
+    const sales = this.pdv.sales().filter(s => !s.cancelled && s.createdAt.startsWith(monthKey));
+    const byDay = new Map<number, number>();
+    for (const s of sales) {
+      const day = new Date(s.createdAt).getDate();
+      byDay.set(day, (byDay.get(day) ?? 0) + s.total);
+    }
+    const days = Array.from({ length: lastDay }, (_, i) => i + 1);
+    const labels = days.map(d => d.toString().padStart(2, '0'));
+    const values = days.map(d => byDay.get(d) ?? 0);
     return {
       labels,
       datasets: [
         {
-          label: 'Receita no mês',
+          label: 'Valor bruto (R$)',
           data: values,
-          backgroundColor: [
-            'rgba(16, 185, 129, 0.8)',
-            'rgba(59, 130, 246, 0.8)',
-            'rgba(139, 92, 246, 0.8)',
-            'rgba(251, 113, 133, 0.8)',
-            'rgba(148, 163, 184, 0.8)',
-          ],
-          borderRadius: 6,
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          fill: true,
+          tension: 0.2,
         },
       ],
     };
   });
 
-  protected readonly monthlyPaymentSummaryChartOptions: ChartConfiguration<'bar'>['options'] = {
+  protected readonly monthlyDailyGrossChartOptions: ChartConfiguration<'line'>['options'] = {
     responsive: true,
-    indexAxis: 'y',
+    maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
       tooltip: {
         callbacks: {
-          label: ctx => this.pdv.money(ctx.parsed.x ?? 0),
+          label: ctx => this.pdv.money(ctx.parsed.y ?? 0),
         },
       },
     },
     scales: {
       x: {
+        grid: { display: false },
+      },
+      y: {
         grid: { color: '#e5e7eb' },
         ticks: { callback: (v) => this.pdv.money(Number(v)) },
       },
-      y: { grid: { display: false } },
     },
   };
   protected readonly filteredProducts = computed(() => {
