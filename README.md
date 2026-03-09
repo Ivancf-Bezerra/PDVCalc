@@ -1,59 +1,40 @@
-# DocesPrecificacaoAngular
+# Doces - Precificação e PDV
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.1.
+Aplicação Angular com **Calculadora de Precificação** (receitas, custos, taxas, markup) e **PDV / Relatório diário de vendas**. Dados salvos localmente no navegador.
 
-## Development server
-
-To start a local development server, run:
+## Início rápido
 
 ```bash
-ng serve
+npm install
+npm start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Acesse `http://localhost:4200/`. A rota padrão é a calculadora de precificação (`/precificacao`). Use o menu para alternar para **PDV** (`/pdv`).
 
-## Code scaffolding
+## Comandos
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+| Comando | Descrição |
+|---------|-----------|
+| `npm start` | Servidor de desenvolvimento |
+| `npm run build` | Build de produção |
+| `npm test` | Testes unitários (Vitest) |
 
-```bash
-ng generate component component-name
-```
+## Documentação
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Toda a documentação de **regras, utilização e desenvolvimento** do projeto está na pasta **`docs/`**:
 
-```bash
-ng generate --help
-```
+- **[docs/DESENVOLVIMENTO.md](docs/DESENVOLVIMENTO.md)** — Regras, convenções, estrutura do projeto, como usar a aplicação e como desenvolver (novas features, estado, estilização, testes).
 
-## Building
+Novos arquivos `.md` para gerenciamento de regras e desenvolvimento devem ser criados em **`docs/`**.
 
-To build the project run:
+## Stack
 
-```bash
-ng build
-```
+- Angular 21
+- Tailwind CSS v4
+- Preline UI
+- Lucide (ícones)
+- Vitest (testes)
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+---
 
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Projeto gerado com [Angular CLI](https://github.com/angular/angular-cli) 21.2.1.
