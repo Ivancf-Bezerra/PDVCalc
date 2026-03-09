@@ -410,17 +410,6 @@ export class PrecificacaoComponent implements OnInit, OnDestroy {
     const input = (event.target as HTMLInputElement);
     this.pricing.updateRecipeItem(rid, item.id, { qtdUsed: safeNum(input?.value) });
   }
-  protected onIngredientFromBank(event: Event, item: RecipeItem): void {
-    const rid = this.pricing.selectedRecipeId();
-    if (!rid) return;
-    const select = (event.target as HTMLSelectElement);
-    const raw = select?.value ?? '';
-    if (!raw) return;
-    const [typeStr, name] = raw.split('|');
-    const type = typeStr === 'embalagem' ? 'embalagem' : 'ingrediente';
-    this.pricing.setFromBank(rid, item.id, type, name ?? '');
-  }
-
   protected onRecipeCategoryChange(categoryId: string | null | undefined): void {
     const id = this.pricing.selectedRecipeId();
     if (!id) return;

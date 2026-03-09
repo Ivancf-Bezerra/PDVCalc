@@ -106,7 +106,7 @@
               <div class="split section-head section-head-ingredients">
                 <div>
                   <div class="section-title">Ingredientes e materiais (CMV)</div>
-                  <div class="hint">Custo real: (preço pago ÷ qtd total) × qtd usada. Adicione itens do banco de dados ou selecione na linha.</div>
+                  <div class="hint">Custo real: (preço pago ÷ qtd total) × qtd usada. Adicione itens do banco de dados.</div>
                 </div>
                 <div class="section-head-actions recipe-bank-dropdown-wrap">
                   <button type="button" class="btn btn-primary" (click)="toggleBankDropdown()" [attr.aria-expanded]="bankDropdownOpen()" aria-haspopup="true" title="Adicionar do banco de dados" aria-label="Adicionar ingrediente ou embalagem do banco">
@@ -153,21 +153,7 @@
                     <tbody>
                       @for (item of paginate(selectedRecipe()?.items ?? [], 'recipe-items'); track item.id) {
                         <tr>
-                          <td>
-                            <select class="from-bank-select" [value]="item.name" (change)="onIngredientFromBank($event, item)">
-                              <option value="">- Selecione do banco -</option>
-                              <optgroup label="Ingredientes">
-                                @for (ing of pricing.database().ingredients; track ing.id) {
-                                  <option [value]="'ingrediente|' + ing.name">{{ ing.name || '(sem nome)' }}</option>
-                                }
-                              </optgroup>
-                              <optgroup label="Embalagens">
-                                @for (pack of pricing.database().packaging; track pack.id) {
-                                  <option [value]="'embalagem|' + pack.name">{{ pack.name || '(sem nome)' }}</option>
-                                }
-                              </optgroup>
-                            </select>
-                          </td>
+                          <td class="td-readonly">{{ item.name || '(sem nome)' }}</td>
                           <td class="mono td-readonly">{{ pricing.money(item.pricePaid) }}</td>
                           <td class="mono td-readonly">{{ pricing.formatQtd(item.qtdTotal) }}</td>
                           <td><input type="number" [value]="item.qtdUsed" min="0" step="0.01" (input)="updateItemQtdUsed(item, $event)"></td>

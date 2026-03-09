@@ -917,8 +917,8 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
 .pdv-order-detail-table {
   width: 100%; border-collapse: collapse; font-size: 0.75rem;
   th {
-    text-align: left; padding: 6px 10px; font-weight: 600; font-size: 0.625rem;
-    text-transform: uppercase; letter-spacing: 0.04em; color: var(--hy-text-muted);
+    text-align: left; padding: 6px 10px; font-weight: 700; font-size: 0.625rem;
+    text-transform: uppercase; letter-spacing: 0.04em; color: var(--hy-text-title);
     background: var(--hy-gray-soft); border-bottom: 1px solid var(--hy-border);
   }
   th.text-right, td.text-right { text-align: right; }
@@ -1020,11 +1020,11 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
   padding: var(--space-2) var(--space-4);
   text-align: left;
   font-size: 0.65rem;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--hy-text-muted);
-  background: transparent;
+  color: var(--hy-text-title);
+  background: var(--hy-gray-soft);
   border-bottom: 1px solid var(--hy-table-row-border);
 }
 .pdv-page .pdv-table th.text-right { text-align: right; }
@@ -2454,17 +2454,17 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
     position: sticky;
     top: 0;
     z-index: 1;
-    background: var(--hy-bg-card);
+    background: var(--hy-gray-soft);
     box-shadow: 0 1px 0 0 var(--hy-table-row-border);
   }
   table { width: 100%; border-collapse: collapse; min-width: 720px; background: var(--hy-bg-card); }
   thead th {
     text-align: left;
     padding: var(--space-2) var(--space-3);
-    background: transparent;
+    background: var(--hy-gray-soft);
     border-bottom: 1px solid var(--hy-table-row-border);
-    color: var(--hy-text-muted);
-    font-weight: 500;
+    color: var(--hy-text-title);
+    font-weight: 600;
     font-size: 0.6875rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -2586,12 +2586,12 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
 /* ---------- 12. COMPONENTES: TABELAS ESPECÍFICAS (pricing, report) ---------- */
   .pricing-detail { width: 100%; border-collapse: collapse; font-size: 0.8125rem; margin-top: 12px; }
   .pricing-detail th, .pricing-detail td { padding: 0.5rem 0.7rem; text-align: left; border-bottom: 1px solid var(--hy-gray-soft); }
-  .pricing-detail th { font-weight: 700; color: var(--hy-text-title); font-family: var(--hy-font-stack); font-size: 0.75rem; }
+  .pricing-detail th { font-weight: 700; color: var(--hy-text-title); background: var(--hy-gray-soft); font-family: var(--hy-font-stack); font-size: 0.75rem; }
   .pricing-detail .num { text-align: right; font-variant-numeric: tabular-nums; }
   
   .report-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
   .report-table th, .report-table td { padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--hy-gray-soft); text-align: left; }
-  .report-table th { background: var(--hy-bg-body); font-weight: 600; font-size: 0.75rem; color: var(--hy-text-title); }
+  .report-table th { background: var(--hy-gray-soft); font-weight: 600; font-size: 0.75rem; color: var(--hy-text-title); }
   .report-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 
   #tab-reports .report-intro { margin-bottom: 16px; color: var(--hy-text-body); font-size: 0.75rem; }
