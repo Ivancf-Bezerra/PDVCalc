@@ -1151,6 +1151,7 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
   cursor: pointer; overflow: hidden;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
   text-align: center;
+  position: relative;
 }
 .pdv-cat-chip:hover { border-color: var(--hy-primary); box-shadow: var(--hy-shadow-card); }
 .pdv-cat-chip--active {
@@ -1161,6 +1162,17 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
 .pdv-cat-chip--active .pdv-cat-chip-icon { color: #fff; }
 .pdv-cat-chip-label { font-size: 0.625rem; font-weight: 600; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
 .pdv-cat-chip-count { font-size: 0.5rem; font-weight: 500; opacity: 0.7; }
+
+.pdv-cat-chip-handle {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  opacity: 0.6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
 
 /* Busca + código de barras */
 .pdv-search-row { display: flex; gap: var(--space-2); margin-bottom: var(--space-3); }

@@ -4,6 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
 import { AuthService, type AppUser, AVATAR_COLORS } from '../../core/auth.service';
 
+type ThemeId = 'light' | 'dark' | 'green-light' | 'green-dark';
+const THEME_KEY = 'pricing-theme';
+
 interface SelectorItem {
   type: 'user' | 'add';
   user?: AppUser;
@@ -23,6 +26,7 @@ export class LoginComponent {
   protected readonly Math = Math;
   protected readonly users = this.auth.users;
   protected readonly avatarColors = AVATAR_COLORS;
+  protected readonly isDark = signal(this.readIsDark());
   protected readonly showNewUserForm = signal(false);
   protected readonly newUserName = signal('');
   protected readonly newUserColor = signal<string>(AVATAR_COLORS[0]);
@@ -104,5 +108,30 @@ export class LoginComponent {
     this.newUserName.set('');
     this.auth.login(user.id);
     this.router.navigate(['/pdv']);
+  }
+
+  private readIsDark(): boolean {
+    try {
+      const stored = localStorage.getItem(THEME_KEY);
+      return stored === 'dark' || stored === 'green-dark';
+    } catch {
+      return false;
+    }
+  }
+
+  protected toggleTheme(): void {
+    try {
+      const current = (localStorage.getItem(THEME_KEY) ?? 'light') as ThemeId;
+      const map: Record<ThemeId, ThemeId> = {
+        'light': 'dark',
+        'dark': 'light',
+        'green-light': 'green-dark',
+        'green-dark': 'green-light',
+      };
+      const next = map[current] ?? 'dark';
+      localStorage.setItem(THEME_KEY, next);
+      document.documentElement.setAttribute('data-theme', next);
+      this.isDark.set(next === 'dark' || next === 'green-dark');
+    } catch { /* ignore */ }
   }
 }

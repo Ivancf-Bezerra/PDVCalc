@@ -10,10 +10,12 @@
 
 .login-page {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 100%;
+  position: relative;
 }
 
 .login-container {
@@ -22,6 +24,32 @@
   align-items: center;
   width: 100%;
   max-width: 720px;
+}
+
+/* ── Theme toggle ───────────────────────────────── */
+
+.login-theme-toggle {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--hy-border);
+  background: var(--hy-bg-card);
+  color: var(--hy-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  z-index: 10;
+
+  &:hover {
+    color: var(--hy-text-title);
+    border-color: var(--hy-text-muted);
+  }
 }
 
 /* ── Header ─────────────────────────────────────── */
@@ -53,7 +81,7 @@
   justify-content: center;
   width: 100%;
   margin-bottom: 36px;
-  min-height: 180px;
+  min-height: 200px;
 }
 
 .login-selector-track {
@@ -73,7 +101,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 0;
   background: none;
   border: 2px solid transparent;
@@ -84,7 +112,7 @@
               opacity 0.35s ease,
               filter 0.35s ease;
 
-  transform: translateX(calc(var(--offset) * 130px)) scale(calc(1 - 0.18 * var(--abs-offset)));
+  transform: translateX(calc(var(--offset) * 140px)) scale(calc(1 - 0.18 * var(--abs-offset)));
   opacity: calc(1 - 0.3 * var(--abs-offset));
   z-index: calc(10 - var(--abs-offset));
   filter: blur(calc(var(--abs-offset) * 0.5px));
@@ -104,34 +132,30 @@
 /* ── Avatar ─────────────────────────────────────── */
 
 .login-avatar {
-  width: 80px;
-  height: 80px;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--hy-dark) 15%, transparent);
   transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.3s ease;
+              height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
   .login-selector-item--focused & {
-    width: 100px;
-    height: 100px;
-    box-shadow: 0 8px 28px color-mix(in srgb, var(--hy-dark) 22%, transparent);
+    width: 120px;
+    height: 120px;
   }
 }
 
 .login-avatar-initials {
-  font-size: 1.5rem;
+  font-size: 1.625rem;
   font-weight: 800;
   color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   user-select: none;
   transition: font-size 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
   .login-selector-item--focused & {
-    font-size: 2rem;
+    font-size: 2.25rem;
   }
 }
 
@@ -157,7 +181,7 @@
               color 0.3s ease;
 
   .login-selector-item--focused & {
-    font-size: 0.9375rem;
+    font-size: 1rem;
     color: var(--hy-text-title);
   }
 }
@@ -199,7 +223,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--hy-dark) 15%, transparent);
   transition: background 0.3s ease;
 }
 
@@ -207,7 +230,6 @@
   font-size: 1.5rem;
   font-weight: 800;
   color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   user-select: none;
 }
 
@@ -329,6 +351,10 @@
 /* ── Footer ─────────────────────────────────────── */
 
 .login-footer-text {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
   font-size: 0.6875rem;
   color: var(--hy-text-muted);
   text-align: center;

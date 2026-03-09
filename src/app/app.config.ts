@@ -53,6 +53,7 @@ import {
   AlertTriangle,
   RotateCcw,
   Eye,
+  GripVertical,
 } from 'lucide-angular';
 
 import { routes } from './app.routes';
@@ -114,6 +115,7 @@ export const appConfig: ApplicationConfig = {
         AlertTriangle,
         RotateCcw,
         Eye,
+        GripVertical,
       })
     )
   ]

@@ -74,6 +74,22 @@ export class PdvCartService {
     this.linesSignal.update((list) => [...list, line]);
   }
 
+  addCustomItem(name: string, quantity: number, unitPrice: number, note?: string): void {
+    const trimmedName = name.trim() || 'Item avulso';
+    const qty = Math.max(1, quantity);
+    const price = Math.max(0, unitPrice);
+    const line: CartLineItem = {
+      id: uid(),
+      productId: `custom:${uid()}`,
+      name: trimmedName,
+      quantity: qty,
+      unitPrice: price,
+      subtotal: qty * price,
+      note: note?.trim() || undefined,
+    };
+    this.linesSignal.update((list) => [...list, line]);
+  }
+
   updateQty(lineId: string, delta: number): void {
     this.linesSignal.update((list) =>
       list.map((l) => {
@@ -141,13 +157,21 @@ export class PdvCartService {
     }
     const orderNum = this.nextOrderNumber();
     this.pdvState.addSales(
-      lines.map((l) => ({
-        description: l.note ? `${l.name} (${l.note})` : l.name,
-        quantity: l.quantity,
-        unitPrice: l.unitPrice,
-        productId: l.productId,
-        itemNote: l.note,
-      })),
+      lines.map((l) => {
+        const isCustom = l.productId?.startsWith('custom:');
+        const baseName = l.name;
+        const description = isCustom
+          ? `item fora do BD: ${baseName}`
+          : (l.note ? `${baseName} (${l.note})` : baseName);
+        const itemNote = isCustom ? 'item fora do BD' : l.note;
+        return {
+          description,
+          quantity: l.quantity,
+          unitPrice: l.unitPrice,
+          productId: isCustom ? null : l.productId,
+          itemNote,
+        };
+      }),
       paymentMethod,
       orderNum
     );

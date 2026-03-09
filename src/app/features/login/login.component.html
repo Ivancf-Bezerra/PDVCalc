@@ -1,4 +1,12 @@
 <div class="login-page">
+  <button type="button" class="login-theme-toggle" (click)="toggleTheme()" [attr.aria-label]="isDark() ? 'Tema claro' : 'Tema escuro'">
+    @if (isDark()) {
+      <lucide-angular name="sun" [size]="20" aria-hidden="true"></lucide-angular>
+    } @else {
+      <lucide-angular name="moon" [size]="20" aria-hidden="true"></lucide-angular>
+    }
+  </button>
+
   <div class="login-container">
     <div class="login-header">
       <h1 class="login-title">Doces</h1>
@@ -25,7 +33,7 @@
               <span class="login-selector-name">{{ item.user.name }}</span>
             } @else {
               <div class="login-avatar login-avatar--add">
-                <lucide-angular name="plus" [size]="28" aria-hidden="true"></lucide-angular>
+                <lucide-angular name="plus" [size]="32" aria-hidden="true"></lucide-angular>
               </div>
               <span class="login-selector-name">Novo</span>
             }
@@ -83,7 +91,7 @@
         </div>
       </div>
     }
-
-    <p class="login-footer-text">Dados salvos localmente no navegador</p>
   </div>
+
+  <p class="login-footer-text">Dados salvos localmente no navegador</p>
 </div>

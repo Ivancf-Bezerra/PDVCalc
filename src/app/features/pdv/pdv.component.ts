@@ -28,7 +28,27 @@ export class PdvComponent implements OnInit, OnDestroy {
   protected readonly cart = inject(PdvCartService);
   private readonly sidebarSubmenu = inject(SidebarSubmenuService);
 
+  protected readonly Math = Math;
+
   protected readonly pdvCategories = PDV_CATEGORIES;
+  protected readonly categoriesOrder = signal<PdvCategoryId[]>(PDV_CATEGORIES.map(c => c.id));
+  protected readonly orderedCategories = computed(() => {
+    const map = new Map(PDV_CATEGORIES.map(c => [c.id, c]));
+    const seen = new Set<PdvCategoryId>();
+    const result: typeof PDV_CATEGORIES = [] as any;
+    for (const id of this.categoriesOrder()) {
+      const cat = map.get(id);
+      if (cat) {
+        result.push(cat);
+        seen.add(id);
+      }
+    }
+    for (const cat of PDV_CATEGORIES) {
+      if (!seen.has(cat.id)) result.push(cat);
+    }
+    return result;
+  });
+  protected readonly draggingCategoryId = signal<PdvCategoryId | null>(null);
   protected readonly catStripScrollRef = viewChild<ElementRef<HTMLElement>>('catStripScroll');
   protected readonly activeTab = signal<string>('tab-pdv');
   protected readonly tabs = [
@@ -57,6 +77,11 @@ export class PdvComponent implements OnInit, OnDestroy {
   protected readonly addQuantityModalNote = signal('');
   protected readonly showAddedFeedback = signal(false);
   private addedFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  protected readonly showCustomItemModal = signal(false);
+  protected readonly customItemName = signal('');
+  protected readonly customItemQty = signal(1);
+  protected readonly customItemPrice = signal(0);
 
   protected readonly showCancelModal = signal(false);
   protected readonly saleToCancelId = signal<string | null>(null);
@@ -266,6 +291,31 @@ export class PdvComponent implements OnInit, OnDestroy {
     this.scheduleScrollSelectedIntoView();
   }
 
+  protected onCategoryDragStart(event: DragEvent, catId: PdvCategoryId): void {
+    this.draggingCategoryId.set(catId);
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', catId);
+    }
+  }
+
+  protected onCategoryDragOver(event: DragEvent, targetId: PdvCategoryId): void {
+    event.preventDefault();
+    const sourceId = this.draggingCategoryId();
+    if (!sourceId || sourceId === targetId) return;
+    const order = [...this.categoriesOrder()];
+    const fromIdx = order.indexOf(sourceId);
+    const toIdx = order.indexOf(targetId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    order.splice(fromIdx, 1);
+    order.splice(toIdx, 0, sourceId);
+    this.categoriesOrder.set(order);
+  }
+
+  protected onCategoryDragEnd(): void {
+    this.draggingCategoryId.set(null);
+  }
+
   protected scrollCategories(direction: number): void {
     const cats = this.pdvCategories;
     const n = Number(cats.length);
@@ -411,6 +461,35 @@ export class PdvComponent implements OnInit, OnDestroy {
     const note = this.addQuantityModalNote().trim() || undefined;
     this.cart.addItem(product, qty, note);
     this.closeAddQuantityModal();
+    this.flashAddedFeedback();
+  }
+
+  protected openCustomItemModal(): void {
+    this.customItemName.set('');
+    this.customItemQty.set(1);
+    this.customItemPrice.set(0);
+    this.showCustomItemModal.set(true);
+  }
+
+  protected closeCustomItemModal(): void {
+    this.showCustomItemModal.set(false);
+  }
+
+  protected incrementCustomQty(): void {
+    this.customItemQty.update(q => q + 1);
+  }
+
+  protected decrementCustomQty(): void {
+    this.customItemQty.update(q => Math.max(1, q - 1));
+  }
+
+  protected confirmCustomItem(): void {
+    const name = this.customItemName().trim();
+    const qty = Math.max(1, this.customItemQty());
+    const price = Math.max(0, Number(this.customItemPrice()) || 0);
+    if (!name || qty <= 0 || price <= 0) return;
+    this.cart.addCustomItem(name, qty, price);
+    this.closeCustomItemModal();
     this.flashAddedFeedback();
   }
 
