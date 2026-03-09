@@ -6,6 +6,7 @@ import { PdvStateService, type SalePaymentMethod, type SaleItem, type DailyOrder
 import { ItemsCatalogService, type CatalogItem, PDV_CATEGORIES, type PdvCategoryId } from '../../core/items-catalog.service';
 import { PdvCartService, type CartLineItem } from '../../core/pdv-cart.service';
 import { SidebarSubmenuService } from '../../core/sidebar-submenu.service';
+import { StorageService } from '../../core/storage.service';
 
 export interface OrderSnapshotForPrint {
   lines: CartLineItem[];
@@ -14,6 +15,8 @@ export interface OrderSnapshotForPrint {
   total: number;
   orderNumber: number;
 }
+
+const LS_CATEGORIES_ORDER = 'pdv.categoriesOrder.v1';
 
 @Component({
   selector: 'app-pdv',
@@ -27,15 +30,16 @@ export class PdvComponent implements OnInit, OnDestroy {
   protected readonly catalog = inject(ItemsCatalogService);
   protected readonly cart = inject(PdvCartService);
   private readonly sidebarSubmenu = inject(SidebarSubmenuService);
+  private readonly storage = inject(StorageService);
 
   protected readonly Math = Math;
 
   protected readonly pdvCategories = PDV_CATEGORIES;
-  protected readonly categoriesOrder = signal<PdvCategoryId[]>(PDV_CATEGORIES.map(c => c.id));
+  protected readonly categoriesOrder = signal<PdvCategoryId[]>(loadInitialCategoriesOrder());
   protected readonly orderedCategories = computed(() => {
     const map = new Map(PDV_CATEGORIES.map(c => [c.id, c]));
     const seen = new Set<PdvCategoryId>();
-    const result: typeof PDV_CATEGORIES = [] as any;
+    const result: { id: PdvCategoryId; label: string; icon: string }[] = [];
     for (const id of this.categoriesOrder()) {
       const cat = map.get(id);
       if (cat) {
@@ -257,6 +261,11 @@ export class PdvComponent implements OnInit, OnDestroy {
       if (id && this.tabs.some((t) => t.id === id)) {
         this.activeTab.set(id);
       }
+    });
+
+    effect(() => {
+      const order = this.categoriesOrder();
+      this.storage.set(LS_CATEGORIES_ORDER, order);
     });
   }
 
@@ -645,5 +654,20 @@ export class PdvComponent implements OnInit, OnDestroy {
 
   protected removeItem(id: string): void {
     this.catalog.removeItem(id);
+  }
+}
+
+function loadInitialCategoriesOrder(): PdvCategoryId[] {
+  try {
+    const raw = localStorage.getItem(LS_CATEGORIES_ORDER);
+    if (!raw) return PDV_CATEGORIES.map(c => c.id);
+    const parsed = JSON.parse(raw) as string[];
+    if (!Array.isArray(parsed)) return PDV_CATEGORIES.map(c => c.id);
+    const validIds = new Set<PdvCategoryId>(PDV_CATEGORIES.map(c => c.id));
+    const filtered = parsed.filter((id): id is PdvCategoryId => validIds.has(id as PdvCategoryId));
+    if (filtered.length === 0) return PDV_CATEGORIES.map(c => c.id);
+    return filtered;
+  } catch {
+    return PDV_CATEGORIES.map(c => c.id);
   }
 }
