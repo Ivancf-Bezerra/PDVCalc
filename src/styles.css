@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* Preline UI */
+@import "../node_modules/preline/variants.css";
+@source "../node_modules/preline/dist/*.js";
+
+/* Plugin de formulários (obrigatório para Preline) */
+@plugin "@tailwindcss/forms";
+
+/* ========== Design system: escala de espaçamento (4px base) ========== */
+@theme {
+  --spacing-app-1: 0.25rem;   /* 4px */
+  --spacing-app-2: 0.5rem;    /* 8px */
+  --spacing-app-3: 0.75rem;   /* 12px */
+  --spacing-app-4: 1rem;      /* 16px */
+  --spacing-app-5: 1.25rem;   /* 20px */
+  --spacing-app-6: 1.5rem;    /* 24px */
+  --spacing-app-8: 2rem;      /* 32px */
+  --spacing-app-10: 2.5rem;   /* 40px */
+  --spacing-app-12: 3rem;     /* 48px */
+  --spacing-app-16: 4rem;     /* 64px */
+  --radius-app-sm: 0.25rem;
+  --radius-app: 0.5rem;
+  --radius-app-lg: 0.75rem;
+  --radius-app-xl: 1rem;
+}
+
+/* Opcional: estilos base do Preline (cursor em botões, hover) */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+@custom-variant hover (&:hover);

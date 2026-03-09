@@ -1,0 +1,724 @@
+<div class="pdv-inner">
+  <div class="pdv-content">
+    <!-- Aba PDV - Tela principal de vendas -->
+    <section class="pdv-panel" [class.active]="activeTab() === 'tab-pdv'" id="tab-pdv">
+      <div class="pdv-sales-page">
+        <!-- Top bar: caixa (uso interno), data, hora, cancelar pedido, histórico -->
+        <header class="pdv-topbar" role="banner" aria-label="Caixa - registro de pedido e pagamento">
+          <div class="pdv-topbar-left">
+            <span class="pdv-topbar-operator" title="Operador do caixa">{{ cart.operator() }}</span>
+            <span class="pdv-topbar-date">
+              <lucide-angular name="calendar" [size]="18" aria-hidden="true"></lucide-angular>
+              {{ currentDate() }}
+            </span>
+            <span class="pdv-topbar-time">
+              <lucide-angular name="clock" [size]="18" aria-hidden="true"></lucide-angular>
+              {{ currentTime() }}
+            </span>
+          </div>
+          <div class="pdv-topbar-right">
+            <button type="button" class="pdv-topbar-link" (click)="setActiveTab('tab-daily')" title="Histórico de vendas">
+              <lucide-angular name="history" [size]="18" aria-hidden="true"></lucide-angular>
+            </button>
+          </div>
+        </header>
+
+        <!-- Miolo: duas colunas (catálogo | pedido) -->
+        <div class="pdv-miolo">
+          <!-- Coluna esquerda: categorias, busca, grade de produtos -->
+          <div class="pdv-miolo-left">
+            <div class="pdv-search-row">
+              <div class="pdv-search-wrap">
+                <input
+                  type="text"
+                  class="pdv-search-input"
+                  placeholder="Buscar produto..."
+                  [ngModel]="searchQuery()"
+                  (ngModelChange)="searchQuery.set($event)"
+                >
+                <lucide-angular name="search" [size]="20" class="pdv-search-icon" aria-hidden="true"></lucide-angular>
+              </div>
+              <div class="pdv-barcode-wrap">
+                <input
+                  type="text"
+                  class="pdv-barcode-input"
+                  placeholder="Código de barras"
+                  [ngModel]="barcodeInput()"
+                  (ngModelChange)="barcodeInput.set($event)"
+                  (keydown.enter)="onBarcodeSubmit(); $event.preventDefault()"
+                >
+                <lucide-angular name="tag" [size]="18" class="pdv-barcode-icon" aria-hidden="true"></lucide-angular>
+              </div>
+            </div>
+            <div class="pdv-cat-strip-wrap">
+              <button type="button" class="pdv-cat-strip-btn pdv-cat-strip-btn--prev" (click)="scrollCategories(-1)" aria-label="Categorias anteriores">
+                <lucide-angular name="chevron-left" [size]="20" aria-hidden="true"></lucide-angular>
+              </button>
+              <div #catStripScroll class="pdv-cat-strip-scroll">
+                <div class="pdv-cat-strip">
+                  @for (cat of pdvCategories; track cat.id) {
+                    <button
+                      type="button"
+                      class="pdv-cat-chip"
+                      [class.pdv-cat-chip--active]="selectedCategory() === cat.id"
+                      (click)="selectCategoryAndCenter(cat.id)"
+                    >
+                      <lucide-angular [name]="cat.icon" [size]="32" aria-hidden="true" class="pdv-cat-chip-icon"></lucide-angular>
+                      <span class="pdv-cat-chip-label">{{ cat.label }}</span>
+                      <span class="pdv-cat-chip-count">{{ getCategoryCount(cat.id) }} itens</span>
+                    </button>
+                  }
+                </div>
+              </div>
+              <button type="button" class="pdv-cat-strip-btn pdv-cat-strip-btn--next" (click)="scrollCategories(1)" aria-label="Próximas categorias">
+                <lucide-angular name="chevron-right" [size]="20" aria-hidden="true"></lucide-angular>
+              </button>
+            </div>
+            <div class="pdv-product-section">
+              <header class="pdv-product-section-header">
+                <span class="pdv-product-section-title">{{ getCategoryLabel(selectedCategory()) }}</span>
+                <span class="pdv-product-section-count">{{ filteredProducts().length }} produto{{ filteredProducts().length !== 1 ? 's' : '' }}</span>
+              </header>
+              <div class="pdv-product-grid">
+                @for (item of filteredProducts(); track item.id) {
+                  <button type="button" class="pdv-product-card" (click)="openAddQuantityModal(item)">
+                    <span class="pdv-product-card-tag">{{ getCategoryLabel(item.categoryId ?? 'outros') }}</span>
+                    <span class="pdv-product-card-name" [innerHTML]="highlightMatch(item.name)"></span>
+                    <span class="pdv-product-card-divider"></span>
+                    <span class="pdv-product-card-price">{{ catalog.money(catalog.effectivePrice(item)) }}</span>
+                  </button>
+                } @empty {
+                  <div class="pdv-product-empty">
+                    @if (searchQuery()) {
+                      Nenhum produto encontrado para "{{ searchQuery() }}".
+                    } @else {
+                      Nenhum produto nesta categoria. Cadastre itens em BD ITEMS.
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Toast: feedback ao adicionar item -->
+          @if (showAddedFeedback()) {
+            <div class="pdv-toast-added" aria-live="polite">
+              <lucide-angular name="check" [size]="16" aria-hidden="true"></lucide-angular>
+              Item adicionado ao pedido
+            </div>
+          }
+
+          <!-- Coluna direita: pedido -->
+          <aside class="pdv-miolo-right">
+            <div class="pdv-order-card">
+              <h2 class="pdv-order-title">
+                <lucide-angular name="clipboard-list" [size]="18" aria-hidden="true"></lucide-angular>
+                Pedido
+              </h2>
+              <header class="pdv-order-header">
+                <div class="pdv-order-header-info">
+                  <input
+                    type="text"
+                    class="pdv-order-customer-input"
+                    placeholder="Cliente (opcional)"
+                    [ngModel]="cart.customer()"
+                    (ngModelChange)="cart.setCustomer($event)"
+                    aria-label="Nome do cliente"
+                  >
+                  <span class="pdv-order-num">#{{ cart.nextOrderNumber() }}</span>
+                </div>
+              </header>
+              <div class="pdv-order-items">
+                <ul class="pdv-order-list">
+                  @for (line of cart.lines(); track line.id) {
+                    <li class="pdv-order-list-item">
+                      <span class="pdv-order-list-text">{{ line.name }} — {{ line.quantity }} x {{ cart.money(line.unitPrice) }} = {{ cart.money(line.subtotal) }}</span>
+                      @if (line.note) {
+                        <span class="pdv-order-list-note">{{ line.note }}</span>
+                      }
+                      <button type="button" class="pdv-order-line-remove" (click)="cart.removeLine(line.id)" aria-label="Remover">
+                        <lucide-angular name="trash-2" [size]="16" aria-hidden="true"></lucide-angular>
+                      </button>
+                    </li>
+                  } @empty {
+                    <li class="pdv-order-empty">Nenhum item selecionado</li>
+                  }
+                </ul>
+              </div>
+              <div class="pdv-order-summary">
+                <div class="pdv-order-sum-row">
+                  <span>Subtotal</span>
+                  <span>{{ cart.money(cart.subtotal()) }}</span>
+                </div>
+                <button type="button" class="pdv-order-discount-btn-full" (click)="openDiscountModal()" title="Aplicar desconto">
+                  <lucide-angular name="percent" [size]="14" aria-hidden="true"></lucide-angular>
+                  <span>Desconto</span>
+                  <span class="pdv-order-discount-value">{{ cart.money(cart.orderDiscount()) }}</span>
+                </button>
+                <div class="pdv-order-sum-row pdv-order-total-row">
+                  <span>Total</span>
+                  <strong>{{ cart.money(cart.total()) }}</strong>
+                </div>
+              </div>
+              <div class="pdv-order-actions">
+                <button type="button" class="pdv-order-btn pdv-order-btn-primary pdv-order-btn-place" (click)="openPaymentModal()" [disabled]="cart.lines().length === 0" title="Finalizar venda e receber pagamento">
+                  <lucide-angular name="shopping-cart" [size]="20" aria-hidden="true"></lucide-angular>
+                  Finalizar venda
+                </button>
+                <button type="button" class="pdv-order-btn pdv-order-btn-secondary" (click)="cart.clearCart()" [disabled]="cart.lines().length === 0" title="Limpar itens do pedido">
+                  <lucide-angular name="x" [size]="16" aria-hidden="true"></lucide-angular>
+                  Limpar pedido
+                </button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- Modal: Quantidade e confirmação (ao clicar no produto) -->
+      @if (showAddQuantityModal() && selectedProductForAdd()) {
+        <div class="pdv-modal-backdrop" (click)="closeAddQuantityModal()" role="presentation"></div>
+        <div class="pdv-modal pdv-modal-add-qty" role="dialog" aria-labelledby="pdv-add-qty-title">
+          <h2 id="pdv-add-qty-title" class="pdv-modal-title">{{ selectedProductForAdd()!.name }}</h2>
+          <p class="pdv-modal-product-price">{{ catalog.money(catalog.effectivePrice(selectedProductForAdd()!)) }}</p>
+          <div class="pdv-modal-field">
+            <label for="pdv-add-qty">Quantidade</label>
+            <div class="pdv-qty-stepper">
+              <button type="button" class="pdv-qty-stepper-btn" (click)="decrementQty()" [disabled]="addQuantityModalQty() <= 1" aria-label="Diminuir quantidade">
+                <lucide-angular name="minus" [size]="18" aria-hidden="true"></lucide-angular>
+              </button>
+              <input type="number" id="pdv-add-qty" min="1" class="pdv-qty-stepper-input" [ngModel]="addQuantityModalQty()" (ngModelChange)="addQuantityModalQty.set($event ?? 1)">
+              <button type="button" class="pdv-qty-stepper-btn" (click)="incrementQty()" aria-label="Aumentar quantidade">
+                <lucide-angular name="plus" [size]="18" aria-hidden="true"></lucide-angular>
+              </button>
+            </div>
+          </div>
+          <div class="pdv-modal-field">
+            <label for="pdv-add-note">Observação (opcional)</label>
+            <input type="text" id="pdv-add-note" placeholder="Ex: sem açúcar, leite vegetal" [ngModel]="addQuantityModalNote()" (ngModelChange)="addQuantityModalNote.set($event)">
+          </div>
+          <div class="pdv-modal-actions">
+            <button type="button" class="pdv-order-btn pdv-order-btn-secondary" (click)="closeAddQuantityModal()">Cancelar</button>
+            <button type="button" class="pdv-order-btn pdv-order-btn-primary" (click)="confirmAddQuantity()">
+              <lucide-angular name="plus" [size]="18" aria-hidden="true"></lucide-angular>
+              Adicionar
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Modal: Pagamento -->
+      @if (showPaymentModal()) {
+        <div class="pdv-modal-backdrop" (click)="closePaymentModal()" role="presentation"></div>
+        <div class="pdv-modal pdv-modal-payment" role="dialog" aria-labelledby="pdv-payment-title">
+          <h2 id="pdv-payment-title" class="pdv-modal-title">Finalizar venda</h2>
+          <p class="pdv-modal-total">Total: <strong>{{ cart.money(cart.total()) }}</strong></p>
+          <div class="pdv-modal-field">
+            <label for="pdv-payment-method">Forma de pagamento</label>
+            <select id="pdv-payment-method" [ngModel]="paymentMethod()" (ngModelChange)="paymentMethod.set($event)">
+              <option value="dinheiro">Dinheiro</option>
+              <option value="debito">Cartão de débito</option>
+              <option value="credito">Cartão de crédito</option>
+              <option value="pix">Pix</option>
+              <option value="outros">Outros</option>
+            </select>
+          </div>
+          @if (paymentMethod() === 'dinheiro') {
+            <div class="pdv-modal-field">
+              <label for="pdv-amount-received">Valor recebido (R$)</label>
+              <input type="number" id="pdv-amount-received" min="0" step="0.01" placeholder="0,00" [ngModel]="amountReceived()" (ngModelChange)="amountReceived.set($event ?? 0)">
+            </div>
+            @let change = changeAmount();
+            @if (change != null && change >= 0) {
+              <p class="pdv-modal-change">Troco: <strong>{{ cart.money(change) }}</strong></p>
+            }
+          }
+          @if (paymentError()) {
+            <p class="pdv-modal-error" role="alert">{{ paymentError() }}</p>
+          }
+          <div class="pdv-modal-actions">
+            <button type="button" class="pdv-order-btn pdv-order-btn-secondary" (click)="closePaymentModal()">Cancelar</button>
+            <button type="button" class="pdv-order-btn pdv-order-btn-primary" (click)="confirmPayment()">
+              Confirmar venda
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Modal: Desconto -->
+      @if (showDiscountModal()) {
+        <div class="pdv-modal-backdrop" (click)="closeDiscountModal()" role="presentation"></div>
+        <div class="pdv-modal pdv-modal-discount" role="dialog" aria-labelledby="pdv-discount-title">
+          <h2 id="pdv-discount-title" class="pdv-modal-title">Aplicar desconto</h2>
+          <div class="pdv-discount-inputs">
+            <div class="pdv-modal-field">
+              <label for="pdv-discount-value">Valor (R$)</label>
+              <input type="number" id="pdv-discount-value" min="0" step="0.01" [ngModel]="discountInput()" (ngModelChange)="onDiscountValueChange($event ?? 0)">
+            </div>
+            <div class="pdv-modal-field">
+              <label for="pdv-discount-pct">Porcentagem (%)</label>
+              <input type="number" id="pdv-discount-pct" min="0" max="100" step="0.5" [ngModel]="discountPctInput()" (ngModelChange)="onDiscountPctChange($event ?? 0)">
+            </div>
+          </div>
+          <p class="pdv-modal-hint">Subtotal atual: {{ cart.money(cart.subtotal()) }} — Desconto: {{ cart.money(discountInput()) }}</p>
+          <div class="pdv-modal-actions">
+            <button type="button" class="pdv-order-btn pdv-order-btn-secondary" (click)="closeDiscountModal()">Cancelar</button>
+            <button type="button" class="pdv-order-btn pdv-order-btn-primary" (click)="applyDiscount()">Aplicar</button>
+          </div>
+        </div>
+      }
+
+      <!-- Modal: Imprimir cupom? (após finalizar venda) -->
+      @if (showPrintPromptModal()) {
+        <div class="pdv-modal-backdrop" (click)="closePrintPromptModal()" role="presentation"></div>
+        <div class="pdv-modal pdv-modal-print-prompt" role="dialog" aria-labelledby="pdv-print-prompt-title">
+          <h2 id="pdv-print-prompt-title" class="pdv-modal-title">Venda finalizada</h2>
+          <p class="pdv-modal-hint">Deseja imprimir o cupom?</p>
+          <div class="pdv-modal-actions">
+            <button type="button" class="pdv-order-btn pdv-order-btn-secondary" (click)="closePrintPromptModal()">Não</button>
+            <button type="button" class="pdv-order-btn pdv-order-btn-primary" (click)="printCupomAndClose()">
+              <lucide-angular name="printer" [size]="18" aria-hidden="true"></lucide-angular>
+              Sim
+            </button>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- Aba Vendas Diárias -->
+    <section class="pdv-panel" [class.active]="activeTab() === 'tab-daily'" id="tab-daily">
+      <div class="pdv-page">
+        <div class="pdv-daily-header">
+          <div>
+            <h2 class="pdv-panel-title">Vendas Diárias</h2>
+            <p class="pdv-intro">{{ currentDate() }}</p>
+          </div>
+          <div class="pdv-daily-header-actions">
+            <button type="button" class="pdv-order-btn pdv-order-btn-secondary" (click)="pdv.clearToday()" [disabled]="pdv.dailyCount() === 0" title="Limpar vendas do dia">
+              <lucide-angular name="trash-2" [size]="16" aria-hidden="true"></lucide-angular>
+              Limpar dia
+            </button>
+          </div>
+        </div>
+
+        <!-- Resumo / Dashboard -->
+        <div class="pdv-daily-summary">
+          <div class="pdv-stat-card">
+            <div class="pdv-stat-icon"><lucide-angular name="shopping-cart" [size]="20" aria-hidden="true"></lucide-angular></div>
+            <div class="pdv-stat-label">Vendas</div>
+            <div class="pdv-stat-value">{{ dailySummary().salesCount }}</div>
+          </div>
+          <div class="pdv-stat-card">
+            <div class="pdv-stat-icon"><lucide-angular name="bar-chart-2" [size]="20" aria-hidden="true"></lucide-angular></div>
+            <div class="pdv-stat-label">Itens vendidos</div>
+            <div class="pdv-stat-value">{{ dailySummary().totalItems }}</div>
+          </div>
+          <div class="pdv-stat-card">
+            <div class="pdv-stat-icon pdv-stat-icon--success"><lucide-angular name="dollar-sign" [size]="20" aria-hidden="true"></lucide-angular></div>
+            <div class="pdv-stat-label">Receita total</div>
+            <div class="pdv-stat-value success">{{ pdv.money(dailySummary().totalRevenue) }}</div>
+          </div>
+          <div class="pdv-stat-card">
+            <div class="pdv-stat-icon"><lucide-angular name="receipt" [size]="20" aria-hidden="true"></lucide-angular></div>
+            <div class="pdv-stat-label">Ticket médio</div>
+            <div class="pdv-stat-value">{{ pdv.money(dailySummary().avgTicket) }}</div>
+          </div>
+        </div>
+
+        <!-- Resumo por forma de pagamento -->
+        <div class="pdv-daily-payment-summary">
+          <h3 class="pdv-daily-section-title">Por forma de pagamento</h3>
+          <div class="pdv-daily-payment-grid">
+            <div class="pdv-payment-stat pdv-payment-stat--all" [class.pdv-payment-stat--active]="dailyPaymentFilter() === 'all'" (click)="dailyPaymentFilter.set('all')">
+              <span class="pdv-payment-stat-label">Todos</span>
+              <span class="pdv-payment-stat-count">{{ dailySummary().salesCount }} vendas</span>
+              <span class="pdv-payment-stat-value">{{ pdv.money(dailySummary().totalRevenue) }}</span>
+            </div>
+            @for (m of paymentMethods; track m) {
+              <div class="pdv-payment-stat" [class.pdv-payment-stat--active]="dailyPaymentFilter() === m" (click)="dailyPaymentFilter.set(dailyPaymentFilter() === m ? 'all' : m)">
+                <span class="pdv-payment-stat-label">{{ paymentMethodLabels[m] }}</span>
+                <span class="pdv-payment-stat-count">{{ dailySummary().byMethod[m].count }} itens</span>
+                <span class="pdv-payment-stat-value">{{ pdv.money(dailySummary().byMethod[m].total) }}</span>
+              </div>
+            }
+            @if (dailySummary().cancelledCount > 0) {
+              <div class="pdv-payment-stat pdv-payment-stat--cancelled" [class.pdv-payment-stat--active]="dailyPaymentFilter() === 'cancelados'" (click)="dailyPaymentFilter.set(dailyPaymentFilter() === 'cancelados' ? 'all' : 'cancelados')">
+                <span class="pdv-payment-stat-label">Cancelados</span>
+                <span class="pdv-payment-stat-count">{{ dailySummary().cancelledCount }} itens</span>
+                <span class="pdv-payment-stat-value pdv-payment-stat-value--negative">-{{ pdv.money(dailySummary().cancelledTotal) }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Filtros e busca -->
+        <div class="pdv-daily-toolbar">
+          <div class="pdv-daily-search-wrap">
+            <input type="text" class="pdv-search-input" placeholder="Buscar venda..." [ngModel]="dailySearchQuery()" (ngModelChange)="dailySearchQuery.set($event)" aria-label="Buscar venda">
+            <span class="pdv-search-icon"><lucide-angular name="search" [size]="16" aria-hidden="true"></lucide-angular></span>
+          </div>
+          @if (dailyPaymentFilter() !== 'all') {
+            <button type="button" class="pdv-daily-filter-clear" (click)="dailyPaymentFilter.set('all')">
+              <lucide-angular name="x" [size]="14" aria-hidden="true"></lucide-angular>
+              {{ getPaymentFilterLabel() }}
+            </button>
+          }
+        </div>
+
+        <!-- Tabela de pedidos -->
+        <div class="pdv-card overflow-hidden">
+          <div class="pdv-table-wrap" [class.table-min-5-rows]="paginatedLength(filteredDailyOrders(), 'daily-sales') < 5">
+            <table class="pdv-table">
+              <thead>
+                <tr>
+                  <th scope="col">Pedido</th>
+                  <th scope="col">Itens</th>
+                  <th scope="col">Pagamento</th>
+                  <th scope="col" class="text-right">Qtd</th>
+                  <th scope="col" class="text-right">Total</th>
+                  <th scope="col" class="text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (order of paginate(filteredDailyOrders(), 'daily-sales'); track order.orderId) {
+                  <tr [class.pdv-sale-cancelled]="order.cancelled" [class.pdv-sale-refunded]="order.refunded">
+                    <td class="cell-title">
+                      <span class="pdv-order-num-badge">{{ order.orderNumber ? '#' + order.orderNumber : '#—' }}</span>
+                      <span class="pdv-order-time">{{ order.createdAt | date:'HH:mm' }}</span>
+                      @if (order.refunded) {
+                        <span class="pdv-cancelled-badge pdv-cancelled-badge--refund">Extornado</span>
+                      } @else if (order.cancelled) {
+                        <span class="pdv-cancelled-badge">Cancelado</span>
+                      }
+                    </td>
+                    <td class="cell-items-preview">
+                      <span class="pdv-order-items-preview">{{ order.items[0].description }}@if (order.items.length > 1) {<span class="pdv-order-items-more"> +{{ order.items.length - 1 }}</span>}</span>
+                    </td>
+                    <td><span class="pdv-payment-badge">{{ paymentMethodLabels[order.paymentMethod] }}</span></td>
+                    <td class="text-right">{{ order.totalItems }}</td>
+                    <td class="text-right cell-total">{{ pdv.money(order.totalValue) }}</td>
+                    <td class="text-center">
+                      <div class="pdv-sale-actions">
+                        <button type="button" class="pdv-sale-view-btn" (click)="openOrderDetail(order.orderId)" title="Ver pedido">
+                          <lucide-angular name="eye" [size]="16" aria-hidden="true"></lucide-angular>
+                        </button>
+                        @if (!order.cancelled && !order.refunded) {
+                          <button type="button" class="pdv-sale-cancel-btn" (click)="openCancelModal(order.orderId)" title="Cancelar pedido">
+                            <lucide-angular name="x-circle" [size]="16" aria-hidden="true"></lucide-angular>
+                          </button>
+                        } @else if (order.cancelled && !order.refunded) {
+                          <button type="button" class="pdv-sale-restore-btn" (click)="restoreOrder(order.orderId)" title="Restaurar pedido">
+                            <lucide-angular name="rotate-ccw" [size]="16" aria-hidden="true"></lucide-angular>
+                          </button>
+                        } @else {
+                          <span class="pdv-sale-cancelled-icon" title="Pedido extornado">
+                            <lucide-angular name="ban" [size]="16" aria-hidden="true"></lucide-angular>
+                          </span>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" class="pdv-empty">
+                      @if (dailySearchQuery() || dailyPaymentFilter() !== 'all') {
+                        Nenhuma venda encontrada com os filtros aplicados.
+                      } @else {
+                        Nenhuma venda registrada hoje.
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @let dailyOrdersList = filteredDailyOrders();
+          @let dailySalesInfo = paginationInfo(dailyOrdersList, 'daily-sales');
+          @if (dailyOrdersList.length > 0) {
+            <div class="table-pagination">
+              <span class="table-pagination-size">Exibir <select class="table-pagination-select" [ngModel]="getTablePageSize('daily-sales')" (ngModelChange)="onPageSizeChange('daily-sales', $event)">@for (opt of pageSizeOptions; track opt) {<option [value]="opt">{{ opt }}</option>}</select> itens</span>
+              <span class="table-pagination-range">{{ dailySalesInfo.start }}-{{ dailySalesInfo.end }} de {{ dailySalesInfo.total }}</span>
+              @if (dailySalesInfo.totalPages > 1) {
+                <div class="table-pagination-nav">
+                  <button type="button" class="table-pagination-btn" (click)="setTablePage('daily-sales', dailySalesInfo.currentPage - 1)" [disabled]="dailySalesInfo.currentPage <= 1" aria-label="Página anterior">Anterior</button>
+                  <span class="table-pagination-page">Página {{ dailySalesInfo.currentPage }} de {{ dailySalesInfo.totalPages }}</span>
+                  <button type="button" class="table-pagination-btn" (click)="setTablePage('daily-sales', dailySalesInfo.currentPage + 1)" [disabled]="dailySalesInfo.currentPage >= dailySalesInfo.totalPages" aria-label="Próxima página">Próxima</button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- Aba Relatório mensal -->
+    <section class="pdv-panel" [class.active]="activeTab() === 'tab-monthly'" id="tab-monthly">
+      <div class="pdv-page">
+        <h2 class="pdv-panel-title">Relatório mensal</h2>
+        <p class="pdv-intro">Vendas agrupadas por mês.</p>
+        <div class="pdv-table-wrap" [class.table-min-5-rows]="paginatedLength(pdv.monthlySales(), 'monthly') < 5">
+            <table class="pdv-table">
+              <thead>
+                <tr>
+                  <th scope="col">Mês</th>
+                  <th scope="col" class="text-right">Vendas</th>
+                  <th scope="col" class="text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (m of paginate(pdv.monthlySales(), 'monthly'); track m.monthKey) {
+                  <tr>
+                    <td class="cell-title">{{ m.label }}</td>
+                    <td class="text-right">{{ m.count }}</td>
+                    <td class="text-right cell-total">{{ pdv.money(m.total) }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="3" class="pdv-empty">Nenhuma venda registrada.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @let monthlyList = pdv.monthlySales();
+          @let monthlyInfo = paginationInfo(monthlyList, 'monthly');
+          @if (monthlyList.length > 0) {
+            <div class="table-pagination">
+              <span class="table-pagination-size">Exibir <select class="table-pagination-select" [ngModel]="getTablePageSize('monthly')" (ngModelChange)="onPageSizeChange('monthly', $event)">@for (opt of pageSizeOptions; track opt) {<option [value]="opt">{{ opt }}</option>}</select> itens</span>
+              <span class="table-pagination-range">{{ monthlyInfo.start }}-{{ monthlyInfo.end }} de {{ monthlyInfo.total }}</span>
+              @if (monthlyInfo.totalPages > 1) {
+                <div class="table-pagination-nav">
+                  <button type="button" class="table-pagination-btn" (click)="setTablePage('monthly', monthlyInfo.currentPage - 1)" [disabled]="monthlyInfo.currentPage <= 1" aria-label="Página anterior">Anterior</button>
+                  <span class="table-pagination-page">Página {{ monthlyInfo.currentPage }} de {{ monthlyInfo.totalPages }}</span>
+                  <button type="button" class="table-pagination-btn" (click)="setTablePage('monthly', monthlyInfo.currentPage + 1)" [disabled]="monthlyInfo.currentPage >= monthlyInfo.totalPages" aria-label="Próxima página">Próxima</button>
+                </div>
+              }
+            </div>
+          }
+      </div>
+    </section>
+
+    <!-- Aba BD ITEMS -->
+    <section class="pdv-panel" [class.active]="activeTab() === 'tab-bd-items'" id="tab-bd-items">
+      <div class="pdv-page">
+        <h2 class="pdv-panel-title">Banco de dados dos itens (BD ITEMS)</h2>
+        <p class="pdv-intro">Itens vindos da calculadora de precificação. Ative "Valor manual" para definir um preço de venda próprio.</p>
+        <div class="pdv-table-wrap" [class.table-min-5-rows]="paginatedLength(catalog.items(), 'bd-items') < 5">
+            <table class="pdv-table pdv-table-items">
+              <thead>
+                <tr>
+                  <th scope="col">Item</th>
+                  <th scope="col" class="text-right">CMV</th>
+                  <th scope="col" class="text-right">Taxas (%)</th>
+                  <th scope="col" class="text-right">Valor sugerido</th>
+                  <th scope="col">Valor manual</th>
+                  <th scope="col" class="text-right">Preço em uso</th>
+                  <th scope="col" class="text-right"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of paginate(catalog.items(), 'bd-items'); track item.id) {
+                  <tr>
+                    <td class="cell-title">{{ item.name }}</td>
+                    <td class="text-right">{{ catalog.money(item.cmv) }}</td>
+                    <td class="text-right">{{ item.feesPct | number:'1.1-1' }}%</td>
+                    <td class="text-right">{{ catalog.money(item.suggestedPrice) }}</td>
+                    <td>
+                      <div class="pdv-bd-row">
+                        <label class="pdv-check-wrap">
+                          <input
+                            type="checkbox"
+                            [checked]="item.useManualPrice"
+                            (change)="setUseManual(item, !item.useManualPrice)"
+                          >
+                          <span>Usar manual</span>
+                        </label>
+                        @if (item.useManualPrice) {
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            class="pdv-input pdv-input-inline"
+                            [ngModel]="item.manualPrice"
+                            (ngModelChange)="setManualPrice(item, $event ?? 0)"
+                          >
+                        }
+                      </div>
+                    </td>
+                    <td class="text-right cell-total">{{ catalog.money(effectivePrice(item)) }}</td>
+                    <td class="text-right">
+                      <button type="button" class="pdv-btn-remove pdv-btn-icon-only" (click)="removeItem(item.id)" aria-label="Remover item" title="Remover"><lucide-angular name="trash-2" [size]="14" aria-hidden="true"></lucide-angular></button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="7" class="pdv-empty">Nenhum item no catálogo. Salve receitas na Calculadora de Precificação para que apareçam aqui.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @let bdItemsList = catalog.items();
+          @let bdItemsInfo = paginationInfo(bdItemsList, 'bd-items');
+          @if (bdItemsList.length > 0) {
+            <div class="table-pagination">
+              <span class="table-pagination-size">Exibir <select class="table-pagination-select" [ngModel]="getTablePageSize('bd-items')" (ngModelChange)="onPageSizeChange('bd-items', $event)">@for (opt of pageSizeOptions; track opt) {<option [value]="opt">{{ opt }}</option>}</select> itens</span>
+              <span class="table-pagination-range">{{ bdItemsInfo.start }}-{{ bdItemsInfo.end }} de {{ bdItemsInfo.total }}</span>
+              @if (bdItemsInfo.totalPages > 1) {
+                <div class="table-pagination-nav">
+                  <button type="button" class="table-pagination-btn" (click)="setTablePage('bd-items', bdItemsInfo.currentPage - 1)" [disabled]="bdItemsInfo.currentPage <= 1" aria-label="Página anterior">Anterior</button>
+                  <span class="table-pagination-page">Página {{ bdItemsInfo.currentPage }} de {{ bdItemsInfo.totalPages }}</span>
+                  <button type="button" class="table-pagination-btn" (click)="setTablePage('bd-items', bdItemsInfo.currentPage + 1)" [disabled]="bdItemsInfo.currentPage >= bdItemsInfo.totalPages" aria-label="Próxima página">Próxima</button>
+                </div>
+              }
+            </div>
+          }
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal: Confirmação de cancelamento -->
+  @if (showCancelModal() && orderToCancel()) {
+    @let order = orderToCancel()!;
+    <div class="pdv-modal-backdrop" (click)="closeCancelModal()" role="presentation"></div>
+    <div class="pdv-modal pdv-modal-cancel" role="dialog" aria-labelledby="pdv-cancel-title">
+      <h2 id="pdv-cancel-title" class="pdv-modal-title pdv-modal-title--danger">
+        <lucide-angular name="x-circle" [size]="20" aria-hidden="true"></lucide-angular>
+        Cancelar pedido {{ order.orderNumber ? '#' + order.orderNumber : '' }}
+      </h2>
+
+      <div class="pdv-cancel-details">
+        @for (item of order.items; track item.id) {
+          <div class="pdv-cancel-detail-row">
+            <span class="pdv-cancel-detail-label">{{ item.description }}</span>
+            <span class="pdv-cancel-detail-value">{{ item.quantity }}x {{ pdv.money(item.unitPrice) }}</span>
+          </div>
+        }
+        <div class="pdv-cancel-detail-row pdv-cancel-detail-row--total">
+          <span class="pdv-cancel-detail-label">Total do pedido</span>
+          <span class="pdv-cancel-detail-value pdv-cancel-detail-value--highlight">{{ pdv.money(order.totalValue) }}</span>
+        </div>
+        <div class="pdv-cancel-detail-row">
+          <span class="pdv-cancel-detail-label">Pagamento</span>
+          <span class="pdv-cancel-detail-value">
+            <span class="pdv-payment-badge">{{ paymentMethodLabels[order.paymentMethod] }}</span>
+          </span>
+        </div>
+        <div class="pdv-cancel-detail-row">
+          <span class="pdv-cancel-detail-label">Data/hora</span>
+          <span class="pdv-cancel-detail-value">{{ order.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+      </div>
+
+      <div class="pdv-modal-field">
+        <label for="pdv-cancel-reason">Motivo do cancelamento (opcional)</label>
+        <input type="text" id="pdv-cancel-reason" placeholder="Ex: pedido duplicado, erro de lançamento..." [ngModel]="cancelReason()" (ngModelChange)="cancelReason.set($event)">
+      </div>
+
+      <p class="pdv-modal-warning">
+        <lucide-angular name="alert-triangle" [size]="14" aria-hidden="true"></lucide-angular>
+        Este pedido ({{ order.items.length }} {{ order.items.length === 1 ? 'item' : 'itens' }}) será marcado como cancelado. Os valores serão subtraídos do relatório.
+      </p>
+
+      <div class="pdv-modal-actions">
+        <button type="button" class="pdv-order-btn pdv-order-btn-secondary" (click)="closeCancelModal()">Voltar</button>
+        <button type="button" class="pdv-order-btn pdv-order-btn-danger" (click)="confirmCancel()">
+          <lucide-angular name="x-circle" [size]="18" aria-hidden="true"></lucide-angular>
+          Confirmar cancelamento
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: Detalhes do pedido -->
+  @if (showOrderDetailModal() && orderDetail()) {
+    @let order = orderDetail()!;
+    <div class="pdv-modal-backdrop" (click)="closeOrderDetail()" role="presentation"></div>
+    <div class="pdv-modal pdv-modal-order-detail" role="dialog" aria-labelledby="pdv-order-detail-title">
+      <div class="pdv-order-detail-header">
+        <h2 id="pdv-order-detail-title" class="pdv-modal-title">
+          <lucide-angular name="clipboard-list" [size]="20" aria-hidden="true"></lucide-angular>
+          Pedido {{ order.orderNumber ? '#' + order.orderNumber : '' }}
+        </h2>
+        <button type="button" class="pdv-modal-close-btn" (click)="closeOrderDetail()" aria-label="Fechar">
+          <lucide-angular name="x" [size]="18" aria-hidden="true"></lucide-angular>
+        </button>
+      </div>
+
+      @if (order.cancelled) {
+        <div class="pdv-order-detail-status pdv-order-detail-status--cancelled">
+          <lucide-angular name="ban" [size]="14" aria-hidden="true"></lucide-angular>
+          {{ order.refunded ? 'Pedido extornado' : 'Pedido cancelado' }}
+          @if (order.cancelReason) {
+            — {{ order.cancelReason }}
+          }
+        </div>
+      }
+
+      <div class="pdv-order-detail-meta">
+        <div class="pdv-order-detail-meta-item">
+          <lucide-angular name="calendar" [size]="14" aria-hidden="true"></lucide-angular>
+          {{ order.createdAt | date:'dd/MM/yyyy' }}
+        </div>
+        <div class="pdv-order-detail-meta-item">
+          <lucide-angular name="clock" [size]="14" aria-hidden="true"></lucide-angular>
+          {{ order.createdAt | date:'HH:mm:ss' }}
+        </div>
+        <div class="pdv-order-detail-meta-item">
+          <span class="pdv-payment-badge">{{ paymentMethodLabels[order.paymentMethod] }}</span>
+        </div>
+      </div>
+
+      <div class="pdv-order-detail-items">
+        <table class="pdv-order-detail-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th class="text-right">Qtd</th>
+              <th class="text-right">Unit.</th>
+              <th class="text-right">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of order.items; track item.id) {
+              <tr>
+                <td>{{ item.description }}</td>
+                <td class="text-right">{{ item.quantity }}</td>
+                <td class="text-right">{{ pdv.money(item.unitPrice) }}</td>
+                <td class="text-right">{{ pdv.money(item.total) }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" class="text-right"><strong>Total</strong></td>
+              <td class="text-right"><strong>{{ pdv.money(order.totalValue) }}</strong></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="pdv-modal-actions">
+        <button type="button" class="pdv-order-btn pdv-order-btn-secondary" (click)="closeOrderDetail()">Fechar</button>
+        @if (!order.cancelled && !order.refunded) {
+          <button type="button" class="pdv-order-btn pdv-order-btn-danger" (click)="closeOrderDetail(); openCancelModal(order.orderId)">
+            <lucide-angular name="x-circle" [size]="18" aria-hidden="true"></lucide-angular>
+            Cancelar pedido
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Banner flutuante: Desfazer cancelamento -->
+  @if (showUndoBanner()) {
+    <div class="pdv-undo-banner" role="status">
+      <lucide-angular name="check" [size]="16" aria-hidden="true"></lucide-angular>
+      <span>Pedido cancelado com sucesso.</span>
+      <button type="button" class="pdv-undo-btn" (click)="undoCancel()">Desfazer</button>
+      <button type="button" class="pdv-undo-dismiss" (click)="dismissUndo()" aria-label="Fechar">
+        <lucide-angular name="x" [size]="14" aria-hidden="true"></lucide-angular>
+      </button>
+    </div>
+  }
+</div>

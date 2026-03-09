@@ -1,0 +1,597 @@
+<ng-template #helpIcon>
+  <lucide-angular name="help-circle" class="icon-help" [size]="14" aria-hidden="true"></lucide-angular>
+</ng-template>
+
+<div class="precificacao-inner">
+  <div class="container">
+    <div class="layout">
+      <div class="page-header-wrap">
+        @for (tab of tabs; track tab.id) {
+          <header class="page-header" [class.active]="activeTab() === tab.id" [attr.data-tab]="tab.id">
+            <h2>{{ tab.title }}</h2>
+            <div class="sub" [innerHTML]="tab.desc"></div>
+          </header>
+        }
+      </div>
+
+      <main class="main-content">
+        <!-- RECEITAS -->
+        <section class="panel" [class.active]="activeTab() === 'tab-recipes'" id="tab-recipes">
+          <div class="card block recipe-picker-bar">
+            <div class="recipe-picker-label">Receita atual</div>
+            <div class="recipe-picker-current">{{ currentRecipeName() }}</div>
+            <div class="recipe-picker-actions">
+              <button type="button" class="btn btn-primary" (click)="openRecipeSearchModal()">
+                <lucide-angular name="book-open" [size]="16" aria-hidden="true"></lucide-angular>
+                Pesquisar receitas
+              </button>
+              <button type="button" class="btn btn-primary" (click)="addRecipe()">
+                <lucide-angular name="plus" [size]="16" aria-hidden="true"></lucide-angular>
+                Nova receita
+              </button>
+              @if (selectedRecipeId()) {
+                <button type="button" class="btn btn-outline-danger btn-icon-only" (click)="deleteRecipe(selectedRecipeId()!)" title="Excluir esta receita" aria-label="Excluir receita">
+                  <lucide-angular name="trash-2" [size]="16" aria-hidden="true"></lucide-angular>
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (!selectedRecipe()) {
+            <div class="card block recipe-empty-state">
+              <p class="recipe-empty-state-text">Nenhuma receita selecionada.</p>
+              <p class="recipe-empty-state-hint">Crie uma nova receita ou pesquise uma existente para editar e adicionar ingredientes.</p>
+              <div class="recipe-empty-state-actions">
+                <button type="button" class="btn btn-primary" (click)="addRecipe()">
+                  <lucide-angular name="plus" [size]="16" aria-hidden="true"></lucide-angular>
+                  Nova receita
+                </button>
+                <button type="button" class="btn btn-primary" (click)="openRecipeSearchModal()">Pesquisar receitas</button>
+              </div>
+            </div>
+          } @else {
+          <div class="card block recipe-data-card">
+            <div class="recipe-card-section recipe-card-section-data">
+              <div class="section-title">Dados da receita</div>
+              <div class="grid recipe-data-grid">
+                <div class="recipe-data-field col-4">
+                  <div class="label-row">
+                    <label for="recipeName">Nome da Receita</label>
+                    <button type="button" class="help-icon" aria-label="Ajuda" (click)="showHelp($event)" data-help="Informe um nome claro para identificar a receita." title="Ajuda"><ng-container *ngTemplateOutlet="helpIcon"></ng-container></button>
+                  </div>
+                  <input type="text" id="recipeName" placeholder="Ex: Bolo de Cenoura" [ngModel]="selectedRecipe()?.name" (ngModelChange)="updateRecipeName($event)">
+                </div>
+                <div class="recipe-data-field col-2">
+                  <div class="label-row"><label for="yieldUnits">Rendimento</label><button type="button" class="help-icon" aria-label="Ajuda" (click)="showHelp($event)" data-help="Quantidade total que a receita produz." title="Ajuda"><ng-container *ngTemplateOutlet="helpIcon"></ng-container></button></div>
+                  <input type="number" id="yieldUnits" min="1" [ngModel]="selectedRecipe()?.yieldUnits ?? 1" (ngModelChange)="updateRecipeYield($event)">
+                </div>
+                <div class="recipe-data-field col-2">
+                  <div class="label-row"><label for="yieldLabel">Por (unidade/fatia)</label></div>
+                  <select id="yieldLabel" [ngModel]="selectedRecipe()?.yieldLabel ?? 'unidade'" (ngModelChange)="updateRecipeYieldLabel($event)">
+                    <option value="unidade">Unidades</option>
+                    <option value="fatia">Fatias</option>
+                  </select>
+                </div>
+                <div class="recipe-data-field col-2">
+                  <div class="label-row"><label for="recipeMinutes">Tempo (min)</label><button type="button" class="help-icon" aria-label="Ajuda" (click)="showHelp($event)" data-help="Tempo total de produção em minutos." title="Ajuda"><ng-container *ngTemplateOutlet="helpIcon"></ng-container></button></div>
+                  <input type="number" id="recipeMinutes" min="0" [ngModel]="selectedRecipe()?.minutes ?? 0" (ngModelChange)="updateRecipeMinutes($event)">
+                </div>
+                <div class="recipe-data-field col-2">
+                  <div class="label-row"><label for="recipeCategory">Categoria</label><button type="button" class="help-icon" aria-label="Ajuda" (click)="showHelp($event)" data-help="Agrupe receitas por tipo." title="Ajuda"><ng-container *ngTemplateOutlet="helpIcon"></ng-container></button></div>
+                  <select id="recipeCategory" [ngModel]="selectedRecipe()?.categoryId ?? ''" (ngModelChange)="onRecipeCategoryChange($event)">
+                    <option value="">Sem categoria</option>
+                    @for (cat of categories(); track cat.id) {
+                      <option [value]="cat.id">{{ cat.name }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+              <div class="grid recipe-category-row">
+                <div class="col-6">
+                  <div class="label-row"><label for="newCategory">Criar nova categoria</label></div>
+                  <div class="category-inline">
+                    <input type="text" id="newCategory" #newCatInput placeholder="Ex.: Bolos, Doces de festa">
+                    <button type="button" class="btn btn-primary" (click)="addCategoryFromInput(newCatInput.value); newCatInput.value='';" title="Adicionar categoria" aria-label="Adicionar categoria">
+                      <lucide-angular name="plus" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular>
+                      Adicionar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="recipe-card-divider" aria-hidden="true"></div>
+
+            <div class="recipe-card-section recipe-card-section-ingredients">
+              <div class="split section-head section-head-ingredients">
+                <div>
+                  <div class="section-title">Ingredientes e materiais (CMV)</div>
+                  <div class="hint">Custo real: (preço pago ÷ qtd total) × qtd usada. Adicione itens do banco de dados ou selecione na linha.</div>
+                </div>
+                <div class="section-head-actions recipe-bank-dropdown-wrap">
+                  <button type="button" class="btn btn-primary" (click)="toggleBankDropdown()" [attr.aria-expanded]="bankDropdownOpen()" aria-haspopup="true" title="Adicionar do banco de dados" aria-label="Adicionar ingrediente ou embalagem do banco">
+                    <lucide-angular name="database" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular>
+                    Adicionar do banco
+                  </button>
+                  @if (bankDropdownOpen()) {
+                    <div class="recipe-bank-dropdown-backdrop" (click)="bankDropdownOpen.set(false)" role="presentation"></div>
+                    <div class="recipe-bank-dropdown-panel" role="menu">
+                      <div class="recipe-bank-dropdown-group">
+                        <div class="recipe-bank-dropdown-group-title">Ingredientes</div>
+                        @for (ing of pricing.database().ingredients; track ing.id) {
+                          <button type="button" class="recipe-bank-dropdown-item" role="menuitem" (click)="addFromBankAndClose('ingrediente', ing.name)">{{ ing.name || '(sem nome)' }}</button>
+                        }
+                        @if (pricing.database().ingredients.length === 0) {
+                          <div class="recipe-bank-dropdown-empty">Nenhum ingrediente no banco</div>
+                        }
+                      </div>
+                      <div class="recipe-bank-dropdown-group">
+                        <div class="recipe-bank-dropdown-group-title">Embalagens</div>
+                        @for (pack of pricing.database().packaging; track pack.id) {
+                          <button type="button" class="recipe-bank-dropdown-item" role="menuitem" (click)="addFromBankAndClose('embalagem', pack.name)">{{ pack.name || '(sem nome)' }}</button>
+                        }
+                        @if (pricing.database().packaging.length === 0) {
+                          <div class="recipe-bank-dropdown-empty">Nenhuma embalagem no banco</div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+              <div class="table-wrap ingredients-body-wrap table-scroll-layout" [class.table-min-5-rows]="paginatedLength(selectedRecipe()?.items ?? [], 'recipe-items') < 5">
+                <div class="table-scroll-header">
+                  <table class="table-scroll-sync">
+                    <thead>
+                      <tr>
+                        <th>Item</th><th>Preço Pago (R$)</th><th>Qtd Total</th><th>Qtd Usada</th><th>Custo Real</th><th>Tipo</th><th></th>
+                      </tr>
+                    </thead>
+                  </table>
+                </div>
+                <div class="table-scroll-body">
+                  <table class="table-scroll-sync">
+                    <tbody>
+                      @for (item of paginate(selectedRecipe()?.items ?? [], 'recipe-items'); track item.id) {
+                        <tr>
+                          <td>
+                            <select class="from-bank-select" [value]="item.name" (change)="onIngredientFromBank($event, item)">
+                              <option value="">- Selecione do banco -</option>
+                              <optgroup label="Ingredientes">
+                                @for (ing of pricing.database().ingredients; track ing.id) {
+                                  <option [value]="'ingrediente|' + ing.name">{{ ing.name || '(sem nome)' }}</option>
+                                }
+                              </optgroup>
+                              <optgroup label="Embalagens">
+                                @for (pack of pricing.database().packaging; track pack.id) {
+                                  <option [value]="'embalagem|' + pack.name">{{ pack.name || '(sem nome)' }}</option>
+                                }
+                              </optgroup>
+                            </select>
+                          </td>
+                          <td class="mono td-readonly">{{ pricing.money(item.pricePaid) }}</td>
+                          <td class="mono td-readonly">{{ pricing.formatQtd(item.qtdTotal) }}</td>
+                          <td><input type="number" [value]="item.qtdUsed" min="0" step="0.01" (input)="updateItemQtdUsed(item, $event)"></td>
+                          <td class="mono">{{ pricing.money(pricing.itemCost(item)) }}</td>
+                          <td class="td-readonly">{{ item.type === 'embalagem' ? 'Embalagem' : 'Ingrediente' }}</td>
+                          <td style="text-align:right;">
+                            <button type="button" class="btn btn-danger btn-icon-only" (click)="removeIngredient(item)" title="Remover" aria-label="Remover"><lucide-angular name="trash-2" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular></button>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              @let recipeItems = selectedRecipe()?.items ?? [];
+              @let recipeItemsInfo = paginationInfo(recipeItems, 'recipe-items');
+              <div class="table-pagination">
+                <span class="table-pagination-size">Exibir <select class="table-pagination-select" [ngModel]="getTablePageSize('recipe-items')" (ngModelChange)="onPageSizeChange('recipe-items', $event)">@for (opt of pageSizeOptions; track opt) {<option [value]="opt">{{ opt }}</option>}</select> itens</span>
+                <span class="table-pagination-range">{{ recipeItemsInfo.start }}-{{ recipeItemsInfo.end }} de {{ recipeItemsInfo.total }}</span>
+                @if (recipeItemsInfo.totalPages > 1) {
+                  <div class="table-pagination-nav">
+                    <button type="button" class="table-pagination-btn" (click)="setTablePage('recipe-items', recipeItemsInfo.currentPage - 1)" [disabled]="recipeItemsInfo.currentPage <= 1" aria-label="Página anterior">Anterior</button>
+                    <span class="table-pagination-page">Página {{ recipeItemsInfo.currentPage }} de {{ recipeItemsInfo.totalPages }}</span>
+                    <button type="button" class="table-pagination-btn" (click)="setTablePage('recipe-items', recipeItemsInfo.currentPage + 1)" [disabled]="recipeItemsInfo.currentPage >= recipeItemsInfo.totalPages" aria-label="Próxima página">Próxima</button>
+                  </div>
+                }
+              </div>
+              <div class="recipe-notes-wrap">
+                <div class="label-row"><label for="recipeNotes">Observações (opcional)</label><button type="button" class="help-icon" aria-label="Ajuda" (click)="showHelp($event)" data-help="Campo livre para anotações." title="Ajuda"><ng-container *ngTemplateOutlet="helpIcon"></ng-container></button></div>
+                <textarea id="recipeNotes" placeholder="Ex: assar 40min, etc." [ngModel]="selectedRecipe()?.notes" (ngModelChange)="updateRecipeNotes($event)"></textarea>
+              </div>
+              <div class="row-actions recipe-card-footer-actions">
+                <button type="button" class="btn btn-success btn-icon-only" (click)="saveRecipeData()" title="Salvar" aria-label="Salvar"><lucide-angular name="save" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card block">
+            <div class="section-title">Resumo da receita atual</div>
+            <div class="results">
+              <div class="result"><h3>CMV (ingredientes) total</h3><div class="value danger">{{ pricing.money(selectedRecipeTotals()?.cmvTotal ?? 0) }}</div></div>
+              <div class="result"><h3>Embalagem total</h3><div class="value danger">{{ pricing.money(selectedRecipeTotals()?.packTotal ?? 0) }}</div></div>
+              <div class="result"><h3>CMV por {{ unitLabel() }}</h3><div class="value">{{ pricing.money(selectedRecipeTotals()?.cmvUnit ?? 0) }}</div></div>
+              <div class="result"><h3>Embalagem por {{ unitLabel() }}</h3><div class="value">{{ pricing.money(selectedRecipeTotals()?.packUnit ?? 0) }}</div></div>
+              <div class="result"><h3>Mão de obra por {{ unitLabel() }}</h3><div class="value">{{ pricing.money(selectedRecipeTotals()?.laborUnit ?? 0) }}</div></div>
+            </div>
+          </div>
+
+          <div class="card block recipe-summary-card">
+            <div class="section-title">Composição do custo (por {{ unitLabel() }})</div>
+            <div class="results results-stack">
+              <div class="result"><h3>CMV</h3><div class="value">{{ pricing.money(unitCostParts()?.cmvUnit ?? 0) }}</div></div>
+              <div class="result"><h3>Embalagem</h3><div class="value">{{ pricing.money(unitCostParts()?.packUnit ?? 0) }}</div></div>
+              <div class="result"><h3>M. de obra</h3><div class="value">{{ pricing.money(unitCostParts()?.laborUnit ?? 0) }}</div></div>
+              <div class="result"><h3>Rateio fixo</h3><div class="value">{{ pricing.money(unitCostParts()?.fixedUnit ?? 0) }}</div></div>
+              <div class="result"><h3>Variáveis</h3><div class="value">{{ pricing.money(unitCostParts()?.varUnit ?? 0) }}</div></div>
+              <div class="result result-total"><h3>Custo unitário total</h3><div class="value">{{ pricing.money(pricingResult().unitCost) }}</div></div>
+            </div>
+          </div>
+          <div class="card block recipe-summary-card">
+            <div class="section-title">Resultado da precificação</div>
+            <div class="results results-stack">
+              <div class="result"><h3>Preço sugerido</h3><div class="value success">{{ pricing.money(pricingResult().suggestedPrice) }}</div></div>
+              <div class="result"><h3>Markup</h3><div class="value primary">{{ pricing.fx(pricingResult().markup) }}x</div></div>
+              <div class="result"><h3>Lucro unit.</h3><div class="value">{{ pricing.money(pricingResult().netProfitUnit) }}</div></div>
+              <div class="result"><h3>Margem líquida</h3><div class="value">{{ pricing.fx(pricingResult().realMargin) }}%</div></div>
+              <div class="result"><h3>Taxas venda</h3><div class="value">{{ pricing.fx(pricingResult().feesPct) }}%</div></div>
+            </div>
+            <div class="hr"></div>
+            <p class="recipe-summary-hint"><span>{{ pricingResult().reason }}</span></p>
+          </div>
+          }
+        </section>
+
+        <!-- CUSTOS FIXOS -->
+        <section class="panel" [class.active]="activeTab() === 'tab-fixed'" id="tab-fixed">
+          <div class="card block">
+            <div class="section-title">Configuração geral</div>
+            <div class="grid">
+              <div class="col-4">
+                <div class="label-row"><label for="monthlyHours">Meta mensal de horas produtivas</label><button type="button" class="help-icon" aria-label="Ajuda" (click)="showHelp($event)" data-help="Horas por mês para rateio." title="Ajuda"><ng-container *ngTemplateOutlet="helpIcon"></ng-container></button></div>
+                <input type="number" id="monthlyHours" min="1" [ngModel]="pricing.fixed().monthlyHours" (ngModelChange)="updateFixedMonthlyHours($event)">
+              </div>
+              <div class="col-4">
+                <div class="label-row"><label for="workDaysPerMonth">Dias úteis no mês</label><button type="button" class="help-icon" aria-label="Ajuda" (click)="showHelp($event)" data-help="Dias trabalhados no mês." title="Ajuda"><ng-container *ngTemplateOutlet="helpIcon"></ng-container></button></div>
+                <input type="number" id="workDaysPerMonth" min="1" max="31" [ngModel]="pricing.fixed().workDaysPerMonth" (ngModelChange)="updateFixedWorkDays($event)">
+              </div>
+              <div class="col-4">
+                <div class="label-row"><label for="laborHourly">Valor da hora (mão de obra)</label><button type="button" class="help-icon" aria-label="Ajuda" (click)="showHelp($event)" data-help="Custo por hora de trabalho." title="Ajuda"><ng-container *ngTemplateOutlet="helpIcon"></ng-container></button></div>
+                <input type="number" id="laborHourly" min="0" step="0.01" [ngModel]="pricing.fixed().laborHourly" (ngModelChange)="updateFixedLaborHourly($event)">
+              </div>
+              <div class="col-12"><div class="hint"><strong>Total mão de obra (mensal):</strong> <span class="mono">{{ pricing.money(pricing.fixed().monthlyHours * pricing.fixed().laborHourly) }}</span></div></div>
+            </div>
+            <div class="explain-box"><strong>Rateio:</strong> custo por hora = total ÷ meta de horas. Por receita: (custo/h × tempo em h) ÷ unidades.</div>
+            <div class="row-actions"><button type="button" class="btn btn-success btn-icon-only" (click)="saveFixedSettings()" title="Salvar" aria-label="Salvar"><lucide-angular name="save" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular></button></div>
+          </div>
+          <div class="card block">
+            <div class="split section-head">
+              <div><div class="section-title">Lista de custos fixos</div><div class="hint">Ex.: aluguel, luz, gás.</div></div>
+              <button type="button" class="btn btn-primary" (click)="pricing.addFixedItem()" title="Adicionar" aria-label="Adicionar"><lucide-angular name="plus" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular> Adicionar</button>
+            </div>
+            <div class="table-wrap table-scroll-wrap table-scroll-layout" [class.table-min-5-rows]="paginatedLength(pricing.fixed().items, 'fixed') < 5">
+              <div class="table-scroll-header"><table class="table-scroll-sync"><thead><tr><th>Nome</th><th>Valor mensal (R$)</th><th></th></tr></thead></table></div>
+              <div class="table-scroll-body">
+                <table class="table-scroll-sync">
+                  <tbody>
+                    @for (it of paginate(pricing.fixed().items, 'fixed'); track it.id) {
+                      <tr>
+                        <td><input type="text" [value]="it.name" (input)="updateFixedItemName(it, $event)" placeholder="Ex: Aluguel"></td>
+                        <td><input type="number" [value]="it.value" (input)="updateFixedItemValue(it, $event)" min="0" step="0.01"></td>
+                        <td style="text-align:right;"><button type="button" class="btn btn-danger btn-icon-only" (click)="pricing.removeFixedItem(it.id)" title="Remover" aria-label="Remover"><lucide-angular name="trash-2" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular></button></td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            @let fixedItems = pricing.fixed().items;
+            @let fixedInfo = paginationInfo(fixedItems, 'fixed');
+            <div class="table-pagination">
+              <span class="table-pagination-size">Exibir <select class="table-pagination-select" [ngModel]="getTablePageSize('fixed')" (ngModelChange)="onPageSizeChange('fixed', $event)">@for (opt of pageSizeOptions; track opt) {<option [value]="opt">{{ opt }}</option>}</select> itens</span>
+              <span class="table-pagination-range">{{ fixedInfo.start }}-{{ fixedInfo.end }} de {{ fixedInfo.total }}</span>
+              @if (fixedInfo.totalPages > 1) {
+                <div class="table-pagination-nav">
+                  <button type="button" class="table-pagination-btn" (click)="setTablePage('fixed', fixedInfo.currentPage - 1)" [disabled]="fixedInfo.currentPage <= 1" aria-label="Página anterior">Anterior</button>
+                  <span class="table-pagination-page">Página {{ fixedInfo.currentPage }} de {{ fixedInfo.totalPages }}</span>
+                  <button type="button" class="table-pagination-btn" (click)="setTablePage('fixed', fixedInfo.currentPage + 1)" [disabled]="fixedInfo.currentPage >= fixedInfo.totalPages" aria-label="Próxima página">Próxima</button>
+                </div>
+              }
+            </div>
+          </div>
+          <div class="card block">
+            <div class="section-title">Resumo</div>
+            <div class="results">
+              <div class="result"><h3>Total custos fixos / mês</h3><div class="value danger">{{ pricing.money(pricing.fixedMonthlyTotal()) }}</div></div>
+              <div class="result"><h3>Rateio fixo por hora</h3><div class="value">{{ pricing.money(pricing.fixedPerHour()) }}</div></div>
+              <div class="result"><h3>Rateio por {{ unitLabel() }} (receita atual)</h3><div class="value">{{ pricing.money(selectedRecipe() ? pricing.fixedPerUnitForRecipe(selectedRecipe()!) : 0) }}</div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAXAS -->
+        <section class="panel" [class.active]="activeTab() === 'tab-fees'" id="tab-fees">
+          <div class="card block">
+            <div class="split section-head">
+              <div><div class="section-title">Taxas percentuais</div><div class="hint">Ex.: cartão, iFood, imposto.</div></div>
+              <button type="button" class="btn btn-primary" (click)="pricing.addFeePct()" title="Adicionar" aria-label="Adicionar"><lucide-angular name="plus" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular> Adicionar</button>
+            </div>
+            <div class="table-wrap table-scroll-wrap table-scroll-layout" [class.table-min-5-rows]="paginatedLength(pricing.fees().pct, 'fee-pct') < 5">
+              <div class="table-scroll-header"><table class="table-scroll-sync"><thead><tr><th>Nome</th><th>Percentual (%)</th><th></th></tr></thead></table></div>
+              <div class="table-scroll-body">
+                <table class="table-scroll-sync">
+                  <tbody>
+                    @for (it of paginate(pricing.fees().pct, 'fee-pct'); track it.id) {
+                      <tr>
+                        <td><input type="text" [value]="it.name" (input)="updateFeePctName(it, $event)" placeholder="Ex: Cartão"></td>
+                        <td><input type="number" [value]="it.pct" (input)="updateFeePctValue(it, $event)" min="0" step="0.01"></td>
+                        <td style="text-align:right;"><button type="button" class="btn btn-danger btn-icon-only" (click)="pricing.removeFeePct(it.id)" title="Remover" aria-label="Remover"><lucide-angular name="trash-2" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular></button></td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            @let feePctItems = pricing.fees().pct;
+            @let feePctInfo = paginationInfo(feePctItems, 'fee-pct');
+            <div class="table-pagination">
+              <span class="table-pagination-size">Exibir <select class="table-pagination-select" [ngModel]="getTablePageSize('fee-pct')" (ngModelChange)="onPageSizeChange('fee-pct', $event)">@for (opt of pageSizeOptions; track opt) {<option [value]="opt">{{ opt }}</option>}</select> itens</span>
+              <span class="table-pagination-range">{{ feePctInfo.start }}-{{ feePctInfo.end }} de {{ feePctInfo.total }}</span>
+              @if (feePctInfo.totalPages > 1) {
+                <div class="table-pagination-nav">
+                  <button type="button" class="table-pagination-btn" (click)="setTablePage('fee-pct', feePctInfo.currentPage - 1)" [disabled]="feePctInfo.currentPage <= 1" aria-label="Página anterior">Anterior</button>
+                  <span class="table-pagination-page">Página {{ feePctInfo.currentPage }} de {{ feePctInfo.totalPages }}</span>
+                  <button type="button" class="table-pagination-btn" (click)="setTablePage('fee-pct', feePctInfo.currentPage + 1)" [disabled]="feePctInfo.currentPage >= feePctInfo.totalPages" aria-label="Próxima página">Próxima</button>
+                </div>
+              }
+            </div>
+          </div>
+          <div class="card block">
+            <div class="split section-head">
+              <div><div class="section-title">Custos variáveis fixos (por unidade)</div><div class="hint">R$ por unidade: etiqueta, saco.</div></div>
+              <button type="button" class="btn btn-primary" (click)="pricing.addVarFixed()" title="Adicionar" aria-label="Adicionar"><lucide-angular name="plus" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular> Adicionar</button>
+            </div>
+            <div class="table-wrap table-scroll-wrap table-scroll-layout" [class.table-min-5-rows]="paginatedLength(pricing.fees().fixedPerUnit, 'fee-fixed') < 5">
+              <div class="table-scroll-header"><table class="table-scroll-sync"><thead><tr><th>Nome</th><th>Valor (R$ por unidade)</th><th></th></tr></thead></table></div>
+              <div class="table-scroll-body">
+                <table class="table-scroll-sync">
+                  <tbody>
+                    @for (it of paginate(pricing.fees().fixedPerUnit, 'fee-fixed'); track it.id) {
+                      <tr>
+                        <td><input type="text" [value]="it.name" (input)="updateVarFixedName(it, $event)" placeholder="Ex: Etiqueta"></td>
+                        <td><input type="number" [value]="it.value" (input)="updateVarFixedValue(it, $event)" min="0" step="0.01"></td>
+                        <td style="text-align:right;"><button type="button" class="btn btn-danger btn-icon-only" (click)="pricing.removeVarFixed(it.id)" title="Remover" aria-label="Remover"><lucide-angular name="trash-2" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular></button></td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            @let feeFixedItems = pricing.fees().fixedPerUnit;
+            @let feeFixedInfo = paginationInfo(feeFixedItems, 'fee-fixed');
+            <div class="table-pagination">
+              <span class="table-pagination-size">Exibir <select class="table-pagination-select" [ngModel]="getTablePageSize('fee-fixed')" (ngModelChange)="onPageSizeChange('fee-fixed', $event)">@for (opt of pageSizeOptions; track opt) {<option [value]="opt">{{ opt }}</option>}</select> itens</span>
+              <span class="table-pagination-range">{{ feeFixedInfo.start }}-{{ feeFixedInfo.end }} de {{ feeFixedInfo.total }}</span>
+              @if (feeFixedInfo.totalPages > 1) {
+                <div class="table-pagination-nav">
+                  <button type="button" class="table-pagination-btn" (click)="setTablePage('fee-fixed', feeFixedInfo.currentPage - 1)" [disabled]="feeFixedInfo.currentPage <= 1" aria-label="Página anterior">Anterior</button>
+                  <span class="table-pagination-page">Página {{ feeFixedInfo.currentPage }} de {{ feeFixedInfo.totalPages }}</span>
+                  <button type="button" class="table-pagination-btn" (click)="setTablePage('fee-fixed', feeFixedInfo.currentPage + 1)" [disabled]="feeFixedInfo.currentPage >= feeFixedInfo.totalPages" aria-label="Próxima página">Próxima</button>
+                </div>
+              }
+            </div>
+          </div>
+          <div class="card block">
+            <div class="section-title">Resumo</div>
+            <div class="results">
+              <div class="result"><h3>Total taxas percentuais</h3><div class="value primary">{{ pricing.pct(pricing.feesPctTotal()) }}</div></div>
+              <div class="result"><h3>Total variáveis / unidade</h3><div class="value danger">{{ pricing.money(pricing.varFixedTotal()) }}</div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PRECIFICAÇÃO -->
+        <section class="panel" [class.active]="activeTab() === 'tab-pricing'" id="tab-pricing">
+          <h2 class="pricing-title">Precificação (markup)</h2>
+          <p class="sub">Formação do preço sugerido: despesas variáveis, margem e markup.</p>
+          <div class="card pricing-card">
+            <div class="pricing-card-header">
+              <div class="pricing-card-label">Preço sugerido por {{ unitLabel() }}</div>
+              <div class="pricing-card-value">{{ pricing.money(pricingResult().suggestedPrice) }}</div>
+            </div>
+            <div class="pricing-card-body">
+              <div class="grid">
+                <div class="col-6">
+                  <label for="pricingMode">Modo de cálculo</label>
+                  <select id="pricingMode" [ngModel]="pricing.pricing().mode" (ngModelChange)="updatePricingMode($event)">
+                    <option value="byMargin">Preço por margem líquida desejada</option>
+                    <option value="byMarket">Analisar margem a partir do preço de mercado</option>
+                  </select>
+                </div>
+                <div class="col-3" [style.display]="pricing.pricing().mode === 'byMarket' ? 'none' : ''">
+                  <label for="desiredMargin">Margem líquida desejada (ML %)</label>
+                  <input type="number" id="desiredMargin" min="0" max="95" step="0.1" [ngModel]="pricing.pricing().desiredMargin" (ngModelChange)="updateDesiredMargin($event)">
+                </div>
+                <div class="col-3" [style.display]="pricing.pricing().mode === 'byMarket' ? '' : 'none'">
+                  <label for="marketPrice">Preço de mercado (R$)</label>
+                  <input type="number" id="marketPrice" min="0" step="0.01" [ngModel]="pricing.pricing().marketPrice" (ngModelChange)="updateMarketPrice($event)">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="pricing-resumo-wrap">
+            <div class="section-title">Resumo (modelo Sebrae)</div>
+            <div class="grid pricing-resumo-grid">
+              <div class="col-4"><div class="card card-explicativo"><div class="card-explicativo-title">1. Despesas variáveis (DV)</div><p class="card-explicativo-texto">Taxas sobre a venda.</p><div class="card-explicativo-conta pricing-resumo-conta">{{ pricing.pct(pricing.feesPctTotal()) }}</div></div></div>
+              <div class="col-4"><div class="card card-explicativo"><div class="card-explicativo-title">2. Margem líquida</div><p class="card-explicativo-texto">Lucro sobre o preço.</p><div class="card-explicativo-conta pricing-resumo-conta">{{ pricing.fx(pricing.pricing().mode === 'byMarket' ? pricingResult().realMargin : pricing.pricing().desiredMargin) }}%</div></div></div>
+              <div class="col-4"><div class="card card-explicativo"><div class="card-explicativo-title">3. Markup (M)</div><p class="card-explicativo-texto">M = 100 / [100 - (DV + ML)].</p><div class="card-explicativo-conta pricing-resumo-conta pricing-resumo-highlight">{{ pricing.fx(pricingResult().markup) }}x</div></div></div>
+              <div class="col-4"><div class="card card-explicativo"><div class="card-explicativo-title">4. Custo unitário</div><p class="card-explicativo-texto">CMV + embalagem + mão de obra + rateio.</p><div class="card-explicativo-conta pricing-resumo-conta">{{ pricing.money(pricingResult().unitCost) }}</div></div></div>
+              <div class="col-4"><div class="card card-explicativo"><div class="card-explicativo-title">5. Preço sugerido</div><p class="card-explicativo-texto">Custo × M ou preço informado.</p><div class="card-explicativo-conta pricing-resumo-conta">{{ pricingResumoPreco() }}</div></div></div>
+              <div class="col-4"><div class="card card-explicativo"><div class="card-explicativo-title">6. Lucro líquido por {{ unitLabel() }}</div><p class="card-explicativo-texto">Após taxas menos custo.</p><div class="card-explicativo-conta pricing-resumo-conta">{{ pricing.money(pricingResult().netProfitUnit) }}</div></div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- RELATÓRIOS -->
+        <section class="panel" [class.active]="activeTab() === 'tab-reports'" id="tab-reports">
+          <p class="sub report-intro">Painel consolidado.</p>
+          <div class="report-dashboard-card">
+            <div class="section-title">Indicadores</div>
+            <div class="metric-grid">
+              <div class="metric-card"><div class="metric-title">Custos fixos / mês</div><div class="metric-value">{{ pricing.money(pricing.fixedMonthlyTotal()) }}</div></div>
+              <div class="metric-card"><div class="metric-title">Rateio fixo / hora</div><div class="metric-value">{{ pricing.money(pricing.fixedPerHour()) }}</div></div>
+              <div class="metric-card"><div class="metric-title">Taxas (DV)</div><div class="metric-value">{{ pricing.pct(pricing.feesPctTotal()) }}</div></div>
+              <div class="metric-card"><div class="metric-title">Receitas</div><div class="metric-value">{{ recipesCount() }}</div></div>
+              <div class="metric-card"><div class="metric-title">Custo unitário atual</div><div class="metric-value">{{ pricing.money(pricingResult().unitCost) }}</div></div>
+              <div class="metric-card"><div class="metric-title">Preço sugerido</div><div class="metric-value">{{ pricing.money(pricingResult().suggestedPrice) }}</div></div>
+              <div class="metric-card"><div class="metric-title">Margem líquida</div><div class="metric-value">{{ pricing.fx(pricingResult().realMargin) }}%</div></div>
+            </div>
+          </div>
+          <div class="report-part card block">
+            <h3 class="report-part-title">Detalhe da receita selecionada</h3>
+            <table class="report-table">
+              <thead><tr><th>Indicador</th><th class="num">Valor</th></tr></thead>
+              <tbody>
+                <tr><td>Nome</td><td>{{ selectedRecipe()?.name ?? '-' }}</td></tr>
+                <tr><td>CMV por {{ unitLabel() }}</td><td class="num">{{ pricing.money(selectedRecipeTotals()?.cmvUnit ?? 0) }}</td></tr>
+                <tr><td>Embalagem por {{ unitLabel() }}</td><td class="num">{{ pricing.money(selectedRecipeTotals()?.packUnit ?? 0) }}</td></tr>
+                <tr><td>Rateio fixo por {{ unitLabel() }}</td><td class="num">{{ pricing.money(selectedRecipe() ? pricing.fixedPerUnitForRecipe(selectedRecipe()!) : 0) }}</td></tr>
+                <tr><td>Mão de obra por {{ unitLabel() }}</td><td class="num">{{ pricing.money(selectedRecipeTotals()?.laborUnit ?? 0) }}</td></tr>
+                <tr><td>Custo unitário total</td><td class="num">{{ pricing.money(pricingResult().unitCost) }}</td></tr>
+                <tr><td>Preço sugerido</td><td class="num">{{ pricing.money(pricingResult().suggestedPrice) }}</td></tr>
+                <tr><td>Margem líquida</td><td class="num">{{ pricing.fx(pricingResult().realMargin) }}%</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- BANCO DE DADOS -->
+        <section class="panel" [class.active]="activeTab() === 'tab-database'" id="tab-database">
+          <div class="card block">
+            <div class="split section-head">
+              <div><div class="section-title">Ingredientes predefinidos</div><div class="hint">Disponíveis ao adicionar na receita.</div></div>
+              <button type="button" class="btn btn-primary" (click)="pricing.addDbIngredient()" title="Adicionar" aria-label="Adicionar"><lucide-angular name="plus" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular> Adicionar</button>
+            </div>
+            <div class="table-wrap table-scroll-wrap table-scroll-layout" [class.table-min-5-rows]="paginatedLength(pricing.database().ingredients, 'db-ingredients') < 5">
+              <div class="table-scroll-header"><table class="table-scroll-sync"><thead><tr><th>Item</th><th>Preço (R$)</th><th>Qtd Total</th><th></th></tr></thead></table></div>
+              <div class="table-scroll-body">
+                <table class="table-scroll-sync">
+                  <tbody>
+                    @for (it of paginate(pricing.database().ingredients, 'db-ingredients'); track it.id) {
+                      <tr>
+                        <td><input type="text" [value]="it.name" (input)="updateDbIngredientName(it, $event)" placeholder="Ex: Farinha"></td>
+                        <td><input type="number" [value]="it.pricePaid" (input)="updateDbIngredientPrice(it, $event)" min="0" step="0.01"></td>
+                        <td><input type="number" [value]="it.qtdTotal" (input)="updateDbIngredientQtd(it, $event)" min="0" step="0.01"></td>
+                        <td style="text-align:right;"><button type="button" class="btn btn-danger btn-icon-only" (click)="pricing.removeDbIngredient(it.id)" title="Remover" aria-label="Remover"><lucide-angular name="trash-2" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular></button></td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            @let dbIngItems = pricing.database().ingredients;
+            @let dbIngInfo = paginationInfo(dbIngItems, 'db-ingredients');
+            <div class="table-pagination">
+              <span class="table-pagination-size">Exibir <select class="table-pagination-select" [ngModel]="getTablePageSize('db-ingredients')" (ngModelChange)="onPageSizeChange('db-ingredients', $event)">@for (opt of pageSizeOptions; track opt) {<option [value]="opt">{{ opt }}</option>}</select> itens</span>
+              <span class="table-pagination-range">{{ dbIngInfo.start }}-{{ dbIngInfo.end }} de {{ dbIngInfo.total }}</span>
+              @if (dbIngInfo.totalPages > 1) {
+                <div class="table-pagination-nav">
+                  <button type="button" class="table-pagination-btn" (click)="setTablePage('db-ingredients', dbIngInfo.currentPage - 1)" [disabled]="dbIngInfo.currentPage <= 1" aria-label="Página anterior">Anterior</button>
+                  <span class="table-pagination-page">Página {{ dbIngInfo.currentPage }} de {{ dbIngInfo.totalPages }}</span>
+                  <button type="button" class="table-pagination-btn" (click)="setTablePage('db-ingredients', dbIngInfo.currentPage + 1)" [disabled]="dbIngInfo.currentPage >= dbIngInfo.totalPages" aria-label="Próxima página">Próxima</button>
+                </div>
+              }
+            </div>
+          </div>
+          <div class="card block">
+            <div class="split section-head">
+              <div><div class="section-title">Embalagens predefinidas</div><div class="hint">Disponíveis ao adicionar na receita.</div></div>
+              <button type="button" class="btn btn-primary" (click)="pricing.addDbPackaging()" title="Adicionar" aria-label="Adicionar"><lucide-angular name="plus" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular> Adicionar</button>
+            </div>
+            <div class="table-wrap table-scroll-wrap table-scroll-layout" [class.table-min-5-rows]="paginatedLength(pricing.database().packaging, 'db-packaging') < 5">
+              <div class="table-scroll-header"><table class="table-scroll-sync"><thead><tr><th>Item</th><th>Preço (R$)</th><th>Qtd Total</th><th></th></tr></thead></table></div>
+              <div class="table-scroll-body">
+                <table class="table-scroll-sync">
+                  <tbody>
+                    @for (it of paginate(pricing.database().packaging, 'db-packaging'); track it.id) {
+                      <tr>
+                        <td><input type="text" [value]="it.name" (input)="updateDbPackagingName(it, $event)" placeholder="Ex: Forminha"></td>
+                        <td><input type="number" [value]="it.pricePaid" (input)="updateDbPackagingPrice(it, $event)" min="0" step="0.01"></td>
+                        <td><input type="number" [value]="it.qtdTotal" (input)="updateDbPackagingQtd(it, $event)" min="0" step="0.01"></td>
+                        <td style="text-align:right;"><button type="button" class="btn btn-danger btn-icon-only" (click)="pricing.removeDbPackaging(it.id)" title="Remover" aria-label="Remover"><lucide-angular name="trash-2" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular></button></td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            @let dbPackItems = pricing.database().packaging;
+            @let dbPackInfo = paginationInfo(dbPackItems, 'db-packaging');
+            <div class="table-pagination">
+              <span class="table-pagination-size">Exibir <select class="table-pagination-select" [ngModel]="getTablePageSize('db-packaging')" (ngModelChange)="onPageSizeChange('db-packaging', $event)">@for (opt of pageSizeOptions; track opt) {<option [value]="opt">{{ opt }}</option>}</select> itens</span>
+              <span class="table-pagination-range">{{ dbPackInfo.start }}-{{ dbPackInfo.end }} de {{ dbPackInfo.total }}</span>
+              @if (dbPackInfo.totalPages > 1) {
+                <div class="table-pagination-nav">
+                  <button type="button" class="table-pagination-btn" (click)="setTablePage('db-packaging', dbPackInfo.currentPage - 1)" [disabled]="dbPackInfo.currentPage <= 1" aria-label="Página anterior">Anterior</button>
+                  <span class="table-pagination-page">Página {{ dbPackInfo.currentPage }} de {{ dbPackInfo.totalPages }}</span>
+                  <button type="button" class="table-pagination-btn" (click)="setTablePage('db-packaging', dbPackInfo.currentPage + 1)" [disabled]="dbPackInfo.currentPage >= dbPackInfo.totalPages" aria-label="Próxima página">Próxima</button>
+                </div>
+              }
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+</div>
+
+@if (recipeSearchModalOpen()) {
+  <div class="recipe-search-modal-backdrop" role="presentation" (click)="closeRecipeSearchModal()"></div>
+  <div class="recipe-search-modal" role="dialog" aria-modal="true" aria-labelledby="recipe-search-modal-title">
+    <div class="recipe-search-modal-inner" (click)="$event.stopPropagation()">
+      <div class="recipe-search-modal-header">
+        <h2 id="recipe-search-modal-title" class="recipe-search-modal-title">Pesquisar receitas</h2>
+        <button type="button" class="btn recipe-search-modal-close" (click)="closeRecipeSearchModal()" aria-label="Fechar"><lucide-angular name="x" [size]="16" aria-hidden="true"></lucide-angular> Fechar</button>
+      </div>
+      <div class="recipe-search-modal-body">
+        <input type="search" class="recipe-search-input" placeholder="Digite para filtrar por nome..." [ngModel]="recipeSearchQuery()" (ngModelChange)="recipeSearchQuery.set($event)" aria-label="Filtrar receitas">
+        <div class="recipe-search-list">
+          @if (filteredRecipes().length === 0) {
+            <p class="recipe-search-empty">{{ recipeSearchQuery() ? 'Nenhuma receita encontrada.' : 'Nenhuma receita cadastrada.' }}</p>
+          } @else {
+            @for (r of paginate(filteredRecipes(), 'recipe-search'); track r.id) {
+              <div class="recipe-search-item" [class.selected]="selectedRecipeId() === r.id" (click)="selectRecipeAndCloseModal(r.id)" role="button" tabindex="0">
+                <div class="recipe-search-item-main">
+                  <span class="recipe-search-item-name">{{ r.name }}</span>
+                  <span class="recipe-search-item-meta">{{ r.yieldUnits }} {{ r.yieldLabel === 'fatia' ? 'fatias' : 'unid.' }} · CMV {{ pricing.money(recipeTotals(r).cmvTotal) }}</span>
+                </div>
+                <div class="recipe-search-item-actions">
+                  <button type="button" class="btn btn-ghost btn-icon-only" (click)="printFichaForRecipe(r.id); $event.stopPropagation()" title="Imprimir ficha" aria-label="Imprimir ficha"><lucide-angular name="printer" class="icon-action" [size]="16" aria-hidden="true"></lucide-angular></button>
+                  <button type="button" class="btn btn-outline-danger btn-icon-only" (click)="deleteRecipe(r.id); $event.stopPropagation()" title="Excluir" aria-label="Excluir"><lucide-angular name="trash-2" class="icon-action" [size]="16" aria-hidden="true"></lucide-angular></button>
+                </div>
+              </div>
+            }
+            @let searchList = filteredRecipes();
+            @let searchInfo = paginationInfo(searchList, 'recipe-search');
+            @if (searchList.length > 0) {
+              <div class="table-pagination recipe-search-pagination">
+                <span class="table-pagination-size">Exibir <select class="table-pagination-select" [ngModel]="getTablePageSize('recipe-search')" (ngModelChange)="onPageSizeChange('recipe-search', $event)">@for (opt of pageSizeOptions; track opt) {<option [value]="opt">{{ opt }}</option>}</select> itens</span>
+                <span class="table-pagination-range">{{ searchInfo.start }}-{{ searchInfo.end }} de {{ searchInfo.total }}</span>
+                @if (searchInfo.totalPages > 1) {
+                  <div class="table-pagination-nav">
+                    <button type="button" class="table-pagination-btn" (click)="setTablePage('recipe-search', searchInfo.currentPage - 1)" [disabled]="searchInfo.currentPage <= 1" aria-label="Página anterior">Anterior</button>
+                    <span class="table-pagination-page">Página {{ searchInfo.currentPage }} de {{ searchInfo.totalPages }}</span>
+                    <button type="button" class="table-pagination-btn" (click)="setTablePage('recipe-search', searchInfo.currentPage + 1)" [disabled]="searchInfo.currentPage >= searchInfo.totalPages" aria-label="Próxima página">Próxima</button>
+                  </div>
+                }
+              </div>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<div id="ficha-tecnica-print" class="ficha-tecnica-print" aria-hidden="true" #fichaPrint></div>
+<div #helpTooltipRef id="helpTooltip" class="help-tooltip" role="tooltip" aria-hidden="true"></div>
