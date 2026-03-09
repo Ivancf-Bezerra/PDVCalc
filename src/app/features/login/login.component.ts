@@ -25,7 +25,7 @@ export class LoginComponent {
   protected readonly avatarColors = AVATAR_COLORS;
   protected readonly showNewUserForm = signal(false);
   protected readonly newUserName = signal('');
-  protected readonly newUserColor = signal(AVATAR_COLORS[0]);
+  protected readonly newUserColor = signal<string>(AVATAR_COLORS[0]);
   protected readonly focusedIndex = signal(0);
 
   protected readonly selectorItems = computed<SelectorItem[]>(() => {
