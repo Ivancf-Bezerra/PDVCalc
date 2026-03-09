@@ -35,7 +35,7 @@ export class PdvComponent implements OnInit, OnDestroy {
   protected readonly Math = Math;
 
   protected readonly pdvCategories = PDV_CATEGORIES;
-  protected readonly categoriesOrder = signal<PdvCategoryId[]>(loadInitialCategoriesOrder());
+  protected readonly categoriesOrder = signal<PdvCategoryId[]>(PDV_CATEGORIES.map(c => c.id));
   protected readonly orderedCategories = computed(() => {
     const map = new Map(PDV_CATEGORIES.map(c => [c.id, c]));
     const seen = new Set<PdvCategoryId>();
@@ -267,6 +267,15 @@ export class PdvComponent implements OnInit, OnDestroy {
       const order = this.categoriesOrder();
       this.storage.set(LS_CATEGORIES_ORDER, order);
     });
+
+    const stored = this.storage.get<PdvCategoryId[]>(LS_CATEGORIES_ORDER);
+    if (Array.isArray(stored) && stored.length > 0) {
+      const validIds = new Set<PdvCategoryId>(PDV_CATEGORIES.map(c => c.id));
+      const filtered = stored.filter((id): id is PdvCategoryId => validIds.has(id as PdvCategoryId));
+      if (filtered.length > 0) {
+        this.categoriesOrder.set(filtered);
+      }
+    }
   }
 
   ngOnInit(): void {
@@ -654,20 +663,5 @@ export class PdvComponent implements OnInit, OnDestroy {
 
   protected removeItem(id: string): void {
     this.catalog.removeItem(id);
-  }
-}
-
-function loadInitialCategoriesOrder(): PdvCategoryId[] {
-  try {
-    const raw = localStorage.getItem(LS_CATEGORIES_ORDER);
-    if (!raw) return PDV_CATEGORIES.map(c => c.id);
-    const parsed = JSON.parse(raw) as string[];
-    if (!Array.isArray(parsed)) return PDV_CATEGORIES.map(c => c.id);
-    const validIds = new Set<PdvCategoryId>(PDV_CATEGORIES.map(c => c.id));
-    const filtered = parsed.filter((id): id is PdvCategoryId => validIds.has(id as PdvCategoryId));
-    if (filtered.length === 0) return PDV_CATEGORIES.map(c => c.id);
-    return filtered;
-  } catch {
-    return PDV_CATEGORIES.map(c => c.id);
   }
 }
