@@ -59,10 +59,17 @@ export class PdvComponent implements OnInit, OnDestroy {
   protected readonly draggingCategoryId = signal<PdvCategoryId | null>(null);
   protected readonly catStripScrollRef = viewChild<ElementRef<HTMLElement>>('catStripScroll');
   protected readonly activeTab = signal<string>('tab-pdv');
+  /** Aba efetiva: segue o sidebar quando válido, senão o activeTab local (para conteúdo sempre alinhado ao menu). */
+  protected readonly effectiveTab = computed(() => {
+    const fromSidebar = this.sidebarSubmenu.activeSubmenuId();
+    if (fromSidebar && this.tabs.some((t) => t.id === fromSidebar)) return fromSidebar;
+    return this.activeTab();
+  });
   protected readonly tabs = [
     { id: 'tab-pdv', label: 'PDV' },
     { id: 'tab-daily', label: 'Vendas Diárias' },
     { id: 'tab-monthly', label: 'Relatório mensal' },
+    { id: 'tab-yearly', label: 'Relatório anual' },
     { id: 'tab-bd-items', label: 'BD ITEMS' },
   ];
 
@@ -398,6 +405,124 @@ export class PdvComponent implements OnInit, OnDestroy {
       },
     },
   };
+
+  // --- Relatório anual ---
+  protected readonly selectedYear = signal(new Date().getFullYear());
+  protected readonly availableYears = computed(() => {
+    const months = this.pdv.monthlySales().map(m => m.monthKey.slice(0, 4));
+    const set = new Set(months);
+    const current = new Date().getFullYear();
+    set.add(String(current));
+    return Array.from(set).map(y => parseInt(y, 10)).sort((a, b) => b - a);
+  });
+  /** Meses do ano selecionado (jan..dez) com total e count; meses sem venda têm total/count 0. */
+  protected readonly yearlyMonthlyData = computed(() => {
+    const year = this.selectedYear();
+    const byMonth = new Map<string, { total: number; count: number }>();
+    for (const m of this.pdv.monthlySales()) {
+      if (m.monthKey.startsWith(String(year))) byMonth.set(m.monthKey, { total: m.total, count: m.count });
+    }
+    const result: { monthKey: string; label: string; total: number; count: number }[] = [];
+    for (let month = 1; month <= 12; month++) {
+      const key = `${year}-${String(month).padStart(2, '0')}`;
+      const data = byMonth.get(key) ?? { total: 0, count: 0 };
+      const d = new Date(year, month - 1, 1);
+      result.push({
+        monthKey: key,
+        label: d.toLocaleDateString('pt-BR', { month: 'short' }),
+        total: data.total,
+        count: data.count,
+      });
+    }
+    return result;
+  });
+  protected readonly yearlySummary = computed(() => {
+    const data = this.yearlyMonthlyData();
+    const totalRevenue = data.reduce((s, m) => s + m.total, 0);
+    const salesCount = data.reduce((s, m) => s + m.count, 0);
+    const avgTicket = salesCount > 0 ? totalRevenue / salesCount : 0;
+    return { totalRevenue, salesCount, avgTicket };
+  });
+  protected readonly yearlyRevenueByMonthChartData = computed<ChartConfiguration<'bar'>['data']>(() => {
+    const data = this.yearlyMonthlyData();
+    return {
+      labels: data.map(m => m.label),
+      datasets: [
+        {
+          label: 'Receita (R$)',
+          data: data.map(m => m.total),
+          backgroundColor: 'rgba(199, 90, 122, 0.7)',
+          borderRadius: 6,
+          maxBarThickness: 24,
+        },
+      ],
+    };
+  });
+  protected readonly yearlyRevenueByMonthChartOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: { label: ctx => this.pdv.money(ctx.parsed.y ?? 0) },
+      },
+    },
+    scales: {
+      x: { grid: { display: false } },
+      y: {
+        grid: { color: '#e5e7eb' },
+        ticks: { callback: (v) => this.pdv.money(Number(v)) },
+      },
+    },
+  };
+  protected readonly yearlyPaymentChartData = computed<ChartConfiguration<'pie'>['data']>(() => {
+    const year = this.selectedYear();
+    const byMethod = this.pdv.getYearlyPaymentsByMethod(year);
+    const labels = this.paymentMethods.map(m => this.paymentMethodLabels[m]);
+    const values = this.paymentMethods.map(m => byMethod[m].total);
+    const backgroundColor = [
+      'rgba(16, 185, 129, 0.85)',
+      'rgba(59, 130, 246, 0.85)',
+      'rgba(139, 92, 246, 0.85)',
+      'rgba(251, 113, 133, 0.85)',
+      'rgba(148, 163, 184, 0.85)',
+    ];
+    return { labels, datasets: [{ data: values, backgroundColor }] };
+  });
+  protected readonly yearlyPaymentChartOptions: ChartConfiguration<'pie'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom' },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const label = ctx.label ?? '';
+            const value = (ctx.parsed as number) ?? 0;
+            const dataset = ctx.dataset.data as number[];
+            const total = dataset.reduce((sum, v) => sum + (v ?? 0), 0);
+            const pct = total ? (value / total) * 100 : 0;
+            return `${label}: ${this.pdv.money(value)} (${pct.toFixed(1)}%)`;
+          },
+        },
+      },
+    },
+  };
+  protected readonly topYearlyItems = computed(() => {
+    const year = this.selectedYear();
+    const prefix = String(year);
+    const sales = this.pdv.sales().filter(s => !s.cancelled && s.createdAt.startsWith(prefix));
+    const map = new Map<string, { name: string; qty: number; total: number }>();
+    for (const s of sales) {
+      const key = s.description;
+      const entry = map.get(key) ?? { name: key, qty: 0, total: 0 };
+      entry.qty += s.quantity;
+      entry.total += s.total;
+      map.set(key, entry);
+    }
+    return Array.from(map.values()).sort((a, b) => b.qty - a.qty).slice(0, 15);
+  });
+
   protected readonly filteredProducts = computed(() => {
     const query = this.searchQuery().trim().toLowerCase();
     const catId = this.selectedCategory();
@@ -508,6 +633,11 @@ export class PdvComponent implements OnInit, OnDestroy {
         this.activeTab.set(id);
       }
     });
+    effect(() => {
+      if (this.effectiveTab() === 'tab-yearly') {
+        setTimeout(() => window.dispatchEvent(new Event('resize')), 150);
+      }
+    });
 
     effect(() => {
       const order = this.categoriesOrder();
@@ -543,6 +673,10 @@ export class PdvComponent implements OnInit, OnDestroy {
   protected setActiveTab(tabId: string): void {
     this.activeTab.set(tabId);
     this.sidebarSubmenu.setActiveSubmenuId(tabId);
+  }
+
+  protected onYearSelect(value: string | number): void {
+    this.selectedYear.set(Number(value));
   }
 
   protected selectCategory(catId: PdvCategoryId): void {

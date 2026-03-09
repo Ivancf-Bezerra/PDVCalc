@@ -1,7 +1,7 @@
 <div class="pdv-inner">
   <div class="pdv-content">
     <!-- Aba PDV - Tela principal de vendas -->
-    <section class="pdv-panel" [class.active]="activeTab() === 'tab-pdv'" id="tab-pdv">
+    <section class="pdv-panel" [class.active]="effectiveTab() === 'tab-pdv'" id="tab-pdv">
       <div class="pdv-sales-page">
         <!-- Top bar: caixa (uso interno), data, hora, cancelar pedido, histórico -->
         <header class="pdv-topbar" role="banner" aria-label="Caixa - registro de pedido e pagamento">
@@ -354,7 +354,7 @@
     </section>
 
     <!-- Aba Vendas Diárias -->
-    <section class="pdv-panel" [class.active]="activeTab() === 'tab-daily'" id="tab-daily">
+    <section class="pdv-panel" [class.active]="effectiveTab() === 'tab-daily'" id="tab-daily">
       <div class="pdv-page">
         <div class="pdv-daily-header">
           <div>
@@ -567,7 +567,7 @@
     </section>
 
     <!-- Aba Relatório mensal -->
-    <section class="pdv-panel" [class.active]="activeTab() === 'tab-monthly'" id="tab-monthly">
+    <section class="pdv-panel" [class.active]="effectiveTab() === 'tab-monthly'" id="tab-monthly">
       <div class="pdv-page">
         <div class="pdv-daily-header">
           <div>
@@ -666,8 +666,115 @@
       </div>
     </section>
 
+    <!-- Aba Relatório anual -->
+    <section class="pdv-panel pdv-panel-yearly" [class.active]="effectiveTab() === 'tab-yearly'" id="tab-yearly">
+      <div class="pdv-page pdv-page-yearly">
+        <div class="pdv-daily-header">
+          <div>
+            <h2 class="pdv-panel-title">Relatório anual</h2>
+            <p class="pdv-intro">Visão consolidada do ano para relatório do estabelecimento.</p>
+          </div>
+          <div class="pdv-daily-header-actions">
+            <label for="pdv-year-select" class="pdv-year-select-label">Ano</label>
+            <select id="pdv-year-select" class="pdv-year-select" [ngModel]="selectedYear()" (ngModelChange)="onYearSelect($event)">
+              @for (y of availableYears(); track y) {
+                <option [value]="y">{{ y }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <!-- Resumo do ano -->
+        <div class="pdv-daily-summary">
+          <div class="pdv-stat-card">
+            <div class="pdv-stat-icon"><lucide-angular name="shopping-cart" [size]="20" aria-hidden="true"></lucide-angular></div>
+            <div class="pdv-stat-label">Vendas no ano</div>
+            <div class="pdv-stat-value">{{ yearlySummary().salesCount }}</div>
+          </div>
+          <div class="pdv-stat-card">
+            <div class="pdv-stat-icon pdv-stat-icon--success"><lucide-angular name="dollar-sign" [size]="20" aria-hidden="true"></lucide-angular></div>
+            <div class="pdv-stat-label">Receita total ({{ selectedYear() }})</div>
+            <div class="pdv-stat-value success">{{ pdv.money(yearlySummary().totalRevenue) }}</div>
+          </div>
+          <div class="pdv-stat-card">
+            <div class="pdv-stat-icon"><lucide-angular name="receipt" [size]="20" aria-hidden="true"></lucide-angular></div>
+            <div class="pdv-stat-label">Ticket médio (ano)</div>
+            <div class="pdv-stat-value">{{ pdv.money(yearlySummary().avgTicket) }}</div>
+          </div>
+        </div>
+
+        <!-- Gráficos anuais -->
+        <div class="pdv-monthly-charts pdv-yearly-charts">
+          <div class="pdv-card pdv-chart-card">
+            <h3 class="pdv-panel-subtitle">Receita por mês ({{ selectedYear() }})</h3>
+            <div class="pdv-chart-wrap">
+              <canvas
+                baseChart
+                [data]="yearlyRevenueByMonthChartData()"
+                [options]="yearlyRevenueByMonthChartOptions"
+                [type]="'bar'">
+              </canvas>
+            </div>
+          </div>
+          <div class="pdv-card pdv-chart-card">
+            <h3 class="pdv-panel-subtitle">Receita por forma de pagamento ({{ selectedYear() }})</h3>
+            <div class="pdv-chart-wrap">
+              <canvas
+                baseChart
+                [data]="yearlyPaymentChartData()"
+                [options]="yearlyPaymentChartOptions"
+                [type]="'pie'">
+              </canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabela resumo por mês -->
+        <div class="pdv-card overflow-hidden">
+          <h3 class="pdv-panel-subtitle">Resumo mensal ({{ selectedYear() }})</h3>
+          <div class="pdv-table-wrap" [class.table-min-5-rows]="yearlyMonthlyData().length < 5">
+            <table class="pdv-table">
+              <thead>
+                <tr>
+                  <th scope="col">Mês</th>
+                  <th scope="col" class="text-right">Vendas</th>
+                  <th scope="col" class="text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (m of yearlyMonthlyData(); track m.monthKey) {
+                  <tr>
+                    <td class="cell-title">{{ m.label }}</td>
+                    <td class="text-right">{{ m.count }}</td>
+                    <td class="text-right cell-total">{{ pdv.money(m.total) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Top 15 itens do ano -->
+        <div class="pdv-card pdv-top-items-card">
+          <h3 class="pdv-panel-subtitle">Top 15 itens do ano ({{ selectedYear() }})</h3>
+          <ol class="pdv-top-items-list">
+            @for (item of topYearlyItems(); track item.name; let i = $index) {
+              <li class="pdv-top-items-row">
+                <span class="pdv-top-items-rank">{{ i + 1 }}</span>
+                <span class="pdv-top-items-name">{{ item.name }}</span>
+                <span class="pdv-top-items-qty">{{ item.qty }}x</span>
+                <span class="pdv-top-items-total">{{ pdv.money(item.total) }}</span>
+              </li>
+            } @empty {
+              <li class="pdv-top-items-empty">Nenhuma venda registrada em {{ selectedYear() }}.</li>
+            }
+          </ol>
+        </div>
+      </div>
+    </section>
+
     <!-- Aba BD ITEMS -->
-    <section class="pdv-panel" [class.active]="activeTab() === 'tab-bd-items'" id="tab-bd-items">
+    <section class="pdv-panel" [class.active]="effectiveTab() === 'tab-bd-items'" id="tab-bd-items">
       <div class="pdv-page">
         <h2 class="pdv-panel-title">Banco de dados dos itens (BD ITEMS)</h2>
         <p class="pdv-intro">Itens vindos da calculadora de precificação. Ative "Valor manual" para definir um preço de venda próprio.</p>

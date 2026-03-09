@@ -50,6 +50,7 @@ export class App implements OnInit {
     { id: 'tab-pdv', label: 'PDV', icon: 'shopping-cart' },
     { id: 'tab-daily', label: 'Vendas Diárias', icon: 'file-text' },
     { id: 'tab-monthly', label: 'Relatório mensal', icon: 'calendar' },
+    { id: 'tab-yearly', label: 'Relatório anual', icon: 'bar-chart-2' },
     { id: 'tab-bd-items', label: 'BD ITEMS', icon: 'database' },
   ];
   protected readonly precificacaoSubmenuItems: Array<{ id: string; label: string; icon: string }> = [

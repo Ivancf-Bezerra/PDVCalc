@@ -680,6 +680,26 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
 .pdv-panel { display: none; }
 .pdv-panel.active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .pdv-panel .pdv-page { padding: var(--hy-main-padding-y) var(--hy-main-padding-x); flex: 1; min-height: 0; overflow-y: auto; }
+.pdv-panel-yearly.active .pdv-page-yearly { min-height: 70vh; }
+
+/* Relatório anual: espaçamento alinhado ao padrão (Vendas Diárias / Relatório mensal) */
+.pdv-page-yearly .pdv-daily-header { margin-bottom: var(--space-4); }
+.pdv-page-yearly .pdv-daily-summary { margin-bottom: var(--space-4); }
+.pdv-page-yearly .pdv-monthly-charts { margin-top: 0; margin-bottom: var(--space-4); }
+.pdv-page-yearly .pdv-monthly-charts + .pdv-card { margin-top: 0; }
+.pdv-page-yearly .pdv-card:not(.pdv-chart-card) {
+  padding: var(--space-3);
+  margin-top: var(--space-4);
+}
+.pdv-page-yearly .pdv-card:not(.pdv-chart-card):first-of-type { margin-top: 0; }
+.pdv-page-yearly .pdv-panel-subtitle {
+  margin: 0 0 var(--space-3);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--hy-text-title);
+}
+.pdv-page-yearly .pdv-card .pdv-table-wrap { margin-top: var(--space-2); }
+.pdv-page-yearly .pdv-top-items-list { margin-top: var(--space-2); }
 .pdv-panel-title {
   font-size: 1.25rem;
   font-weight: 700;
@@ -766,7 +786,18 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
 /* Vendas Diárias */
 .pdv-daily-header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
 .pdv-daily-header .pdv-panel-title { margin-bottom: 0; }
-.pdv-daily-header-actions { display: flex; gap: var(--space-2); flex-shrink: 0; }
+.pdv-daily-header-actions { display: flex; gap: var(--space-2); flex-shrink: 0; align-items: center; }
+.pdv-year-select-label { font-size: 0.75rem; font-weight: 600; color: var(--hy-text-muted); }
+.pdv-year-select {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--hy-border);
+  border-radius: var(--hy-radius);
+  background: var(--hy-bg-card);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--hy-text-title);
+  min-width: 5rem;
+}
 .pdv-daily-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); margin-bottom: var(--space-3); }
 @media (max-width: 768px) { .pdv-daily-summary { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 480px) { .pdv-daily-summary { grid-template-columns: 1fr; } }

@@ -276,4 +276,25 @@ export class PdvStateService {
     }
     return result;
   }
+
+  /** Vendas do ano agregadas por forma de pagamento (para relatório anual). */
+  getYearlyPaymentsByMethod(year: number): Record<SalePaymentMethod, { count: number; total: number }> {
+    const prefix = String(year);
+    const initial: Record<SalePaymentMethod, { count: number; total: number }> = {
+      dinheiro: { count: 0, total: 0 },
+      debito: { count: 0, total: 0 },
+      credito: { count: 0, total: 0 },
+      pix: { count: 0, total: 0 },
+      outros: { count: 0, total: 0 },
+    };
+    const result = { ...initial };
+    for (const s of this.salesSignal()) {
+      if (s.cancelled) continue;
+      if (!s.createdAt.startsWith(prefix)) continue;
+      const method = (s.paymentMethod ?? 'outros') as SalePaymentMethod;
+      result[method].count += 1;
+      result[method].total += s.total;
+    }
+    return result;
+  }
 }
