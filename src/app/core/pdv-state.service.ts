@@ -251,4 +251,29 @@ export class PdvStateService {
   money(v: number): string {
     return BRL.format(Number.isFinite(v) ? v : 0);
   }
+
+  getCurrentMonthKey(): string {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  getMonthlyPaymentsByMethod(monthKey: string): Record<SalePaymentMethod, { count: number; total: number }> {
+    const initial: Record<SalePaymentMethod, { count: number; total: number }> = {
+      dinheiro: { count: 0, total: 0 },
+      debito: { count: 0, total: 0 },
+      credito: { count: 0, total: 0 },
+      pix: { count: 0, total: 0 },
+      outros: { count: 0, total: 0 },
+    };
+    const prefix = monthKey.slice(0, 7);
+    const result = { ...initial };
+    for (const s of this.salesSignal()) {
+      if (s.cancelled) continue;
+      if (!s.createdAt.startsWith(prefix)) continue;
+      const method = (s.paymentMethod ?? 'outros') as SalePaymentMethod;
+      result[method].count += 1;
+      result[method].total += s.total;
+    }
+    return result;
+  }
 }

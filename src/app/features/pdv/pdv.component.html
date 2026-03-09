@@ -362,6 +362,10 @@
             <p class="pdv-intro">{{ currentDate() }}</p>
           </div>
           <div class="pdv-daily-header-actions">
+            <button type="button" class="pdv-order-btn pdv-order-btn-secondary" (click)="printDailyPaymentsReport()" [disabled]="pdv.dailyCount() === 0" title="Salvar ficha de pagamentos (PDF)">
+              <lucide-angular name="printer" [size]="16" aria-hidden="true"></lucide-angular>
+              Salvar PDF
+            </button>
             <button type="button" class="pdv-order-btn pdv-order-btn-secondary" (click)="pdv.clearToday()" [disabled]="pdv.dailyCount() === 0" title="Limpar vendas do dia">
               <lucide-angular name="trash-2" [size]="16" aria-hidden="true"></lucide-angular>
               Limpar dia
@@ -522,8 +526,18 @@
     <!-- Aba Relatório mensal -->
     <section class="pdv-panel" [class.active]="activeTab() === 'tab-monthly'" id="tab-monthly">
       <div class="pdv-page">
-        <h2 class="pdv-panel-title">Relatório mensal</h2>
-        <p class="pdv-intro">Vendas agrupadas por mês.</p>
+        <div class="pdv-daily-header">
+          <div>
+            <h2 class="pdv-panel-title">Relatório mensal</h2>
+            <p class="pdv-intro">Vendas agrupadas por mês.</p>
+          </div>
+          <div class="pdv-daily-header-actions">
+            <button type="button" class="pdv-order-btn pdv-order-btn-secondary" (click)="printMonthlyPaymentsReport()" [disabled]="pdv.monthlySales().length === 0" title="Salvar ficha mensal de pagamentos (PDF)">
+              <lucide-angular name="printer" [size]="16" aria-hidden="true"></lucide-angular>
+              Salvar PDF
+            </button>
+          </div>
+        </div>
         <div class="pdv-table-wrap" [class.table-min-5-rows]="paginatedLength(pdv.monthlySales(), 'monthly') < 5">
             <table class="pdv-table">
               <thead>

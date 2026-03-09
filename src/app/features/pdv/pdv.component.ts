@@ -7,6 +7,7 @@ import { ItemsCatalogService, type CatalogItem, PDV_CATEGORIES, type PdvCategory
 import { PdvCartService, type CartLineItem } from '../../core/pdv-cart.service';
 import { SidebarSubmenuService } from '../../core/sidebar-submenu.service';
 import { StorageService } from '../../core/storage.service';
+import jsPDF from 'jspdf';
 
 export interface OrderSnapshotForPrint {
   lines: CartLineItem[];
@@ -592,6 +593,156 @@ export class PdvComponent implements OnInit, OnDestroy {
       w.print();
       w.close();
     }
+  }
+
+  protected printDailyPaymentsReport(): void {
+    const summary = this.dailySummary();
+    const now = new Date().toLocaleString('pt-BR');
+    const summaryCards = [
+      { label: 'Vendas', value: String(summary.salesCount) },
+      { label: 'Itens vendidos', value: String(summary.totalItems) },
+      { label: 'Receita total', value: this.pdv.money(summary.totalRevenue), accent: true },
+      { label: 'Ticket médio', value: this.pdv.money(summary.avgTicket) },
+    ];
+    const paymentCards = this.paymentMethods.map((m) => {
+      const data = summary.byMethod[m];
+      return {
+        label: this.paymentMethodLabels[m],
+        count: data?.count ?? 0,
+        total: this.pdv.money(data?.total ?? 0),
+      };
+    });
+    this.openReportWindow(
+      'Ficha de Vendas Diárias',
+      'Ficha de Vendas Diárias',
+      now,
+      summaryCards,
+      paymentCards,
+      summary.cancelledCount,
+      this.pdv.money(summary.cancelledTotal)
+    );
+  }
+
+  protected printMonthlyPaymentsReport(): void {
+    const monthKey = this.pdv.getCurrentMonthKey();
+    const byMethod = this.pdv.getMonthlyPaymentsByMethod(monthKey);
+    const [y, m] = monthKey.split('-').map(Number);
+    const label = new Date(y, (m ?? 1) - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const now = new Date().toLocaleString('pt-BR');
+    const monthInfo = this.pdv.monthlySales().find(ms => ms.monthKey === monthKey);
+    const totalCount = monthInfo?.count ?? 0;
+    const totalValue = monthInfo?.total ?? 0;
+    const summaryCards = [
+      { label: 'Mês', value: label },
+      { label: 'Vendas no mês', value: String(totalCount) },
+      { label: 'Receita total', value: this.pdv.money(totalValue), accent: true },
+    ];
+    const paymentCards = this.paymentMethods.map((mth) => {
+      const data = byMethod[mth];
+      return {
+        label: this.paymentMethodLabels[mth],
+        count: data.count,
+        total: this.pdv.money(data.total),
+      };
+    });
+    this.openReportWindow(
+      'Ficha de Vendas Mensais',
+      'Ficha de Vendas Mensais',
+      now,
+      summaryCards,
+      paymentCards,
+      0,
+      this.pdv.money(0)
+    );
+  }
+
+  private openReportWindow(
+    docTitle: string,
+    heading: string,
+    subtitle: string,
+    summaryCards: Array<{ label: string; value: string; accent?: boolean }>,
+    paymentCards: Array<{ label: string; count: number; total: string }>,
+    cancelledCount: number,
+    cancelledTotalFormatted: string
+  ): void {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 60;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text(heading, 40, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Emitido em: ${subtitle}`, pageWidth - 40, y - 4, { align: 'right' });
+
+    y += 24;
+
+    const cardWidth = (pageWidth - 80 - 3 * 12) / 4;
+    const cardHeight = 46;
+    summaryCards.forEach((c, index) => {
+      const col = index % 4;
+      const row = Math.floor(index / 4);
+      const x = 40 + col * (cardWidth + 12);
+      const cy = y + row * (cardHeight + 10);
+      doc.setDrawColor(230);
+      doc.setFillColor(c.accent ? 254 : 249, c.accent ? 243 : 250, c.accent ? 247 : 251);
+      doc.roundedRect(x, cy, cardWidth, cardHeight, 6, 6, 'FD');
+      doc.setFontSize(8);
+      doc.setTextColor(107);
+      doc.text(c.label.toUpperCase(), x + 8, cy + 14);
+      doc.setFontSize(12);
+      doc.setTextColor(17);
+      doc.text(String(c.value), x + 8, cy + 30);
+    });
+
+    y += cardHeight + 40;
+
+    doc.setFontSize(11);
+    doc.setTextColor(17);
+    doc.text('Por forma de pagamento', 40, y);
+    y += 12;
+
+    const payCardWidth = (pageWidth - 80 - 2 * 12) / 3;
+    const payCardHeight = 40;
+    paymentCards.forEach((p, index) => {
+      const col = index % 3;
+      const row = Math.floor(index / 3);
+      const x = 40 + col * (payCardWidth + 12);
+      const py = y + row * (payCardHeight + 8);
+      doc.setDrawColor(230);
+      doc.setFillColor(249, 250, 251);
+      doc.roundedRect(x, py, payCardWidth, payCardHeight, 6, 6, 'FD');
+      doc.setFontSize(9);
+      doc.setTextColor(75);
+      doc.text(p.label, x + 8, py + 14);
+      doc.setFontSize(9);
+      doc.setTextColor(17);
+      doc.text(`${p.count} vendas`, x + 8, py + 28);
+      doc.text(p.total, x + payCardWidth - 8, py + 28, { align: 'right' });
+    });
+
+    let lastRow = Math.floor((paymentCards.length - 1) / 3);
+    let reservedHeight = (lastRow + 1) * (payCardHeight + 8);
+    let yAfterPayments = y + reservedHeight + 20;
+
+    if (cancelledCount > 0) {
+      doc.setDrawColor(249, 128, 128);
+      doc.setFillColor(254, 242, 242);
+      const boxWidth = pageWidth - 80;
+      const boxHeight = 40;
+      const x = 40;
+      const cy = yAfterPayments;
+      doc.roundedRect(x, cy, boxWidth, boxHeight, 6, 6, 'FD');
+      doc.setFontSize(9);
+      doc.setTextColor(185, 28, 28);
+      doc.text('Cancelados', x + 8, cy + 14);
+      doc.setTextColor(127, 29, 29);
+      doc.text(`${cancelledCount} pedidos`, x + 8, cy + 28);
+      doc.text(`- ${cancelledTotalFormatted}`, x + boxWidth - 8, cy + 28, { align: 'right' });
+    }
+
+    doc.save(`${docTitle.replace(/\\s+/g, '_').toLowerCase()}.pdf`);
   }
 
   protected openDiscountModal(): void {
