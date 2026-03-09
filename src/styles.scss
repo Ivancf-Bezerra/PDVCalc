@@ -1174,6 +1174,82 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
   pointer-events: none;
 }
 
+/* Gráficos de vendas diárias e mensais */
+.pdv-daily-charts,
+.pdv-monthly-charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.pdv-chart-card {
+  padding: var(--space-3);
+}
+
+.pdv-top-items-card {
+  grid-column: 1 / -1;
+}
+
+.pdv-chart-card canvas {
+  width: 100% !important;
+  height: 260px !important;
+}
+
+.pdv-top-items-list {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-2) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pdv-top-items-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.75rem;
+  padding: 4px 6px;
+  border-radius: var(--hy-radius);
+}
+
+.pdv-top-items-row:nth-child(odd) {
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.pdv-top-items-rank {
+  width: 1.5rem;
+  text-align: right;
+  font-weight: 600;
+  color: var(--hy-text-muted);
+}
+
+.pdv-top-items-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdv-top-items-qty {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  min-width: 2.5rem;
+}
+
+.pdv-top-items-total {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  min-width: 4.5rem;
+  font-weight: 600;
+}
+
+.pdv-top-items-empty {
+  font-size: 0.75rem;
+  color: var(--hy-text-muted);
+}
+
 /* Busca + código de barras */
 .pdv-search-row { display: flex; gap: var(--space-2); margin-bottom: var(--space-3); }
 .pdv-search-wrap, .pdv-barcode-wrap { position: relative; flex: 1; min-width: 0; }

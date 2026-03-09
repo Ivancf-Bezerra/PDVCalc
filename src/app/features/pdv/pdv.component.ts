@@ -2,6 +2,9 @@ import { Component, effect, inject, OnInit, OnDestroy, signal, computed, viewChi
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
+import { BaseChartDirective } from 'ng2-charts';
+import type { ChartConfiguration } from 'chart.js';
+import 'chart.js/auto';
 import { PdvStateService, type SalePaymentMethod, type SaleItem, type DailyOrder, PAYMENT_METHOD_LABELS } from '../../core/pdv-state.service';
 import { ItemsCatalogService, type CatalogItem, PDV_CATEGORIES, type PdvCategoryId } from '../../core/items-catalog.service';
 import { PdvCartService, type CartLineItem } from '../../core/pdv-cart.service';
@@ -22,7 +25,7 @@ const LS_CATEGORIES_ORDER = 'pdv.categoriesOrder.v1';
 @Component({
   selector: 'app-pdv',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule, BaseChartDirective],
   templateUrl: './pdv.component.html',
   styleUrl: './pdv.component.scss',
 })
@@ -153,6 +156,230 @@ export class PdvComponent implements OnInit, OnDestroy {
     return { totalItems, totalRevenue, avgTicket, byMethod, salesCount: activeOrders.length, cancelledCount, cancelledTotal };
   });
 
+  protected readonly dailyHourChartData = computed<ChartConfiguration<'bar'>['data']>(() => {
+    const sales = this.pdv.todaySales().filter(s => !s.cancelled);
+    const labels: string[] = [];
+    const values: number[] = [];
+    for (let hour = 6; hour <= 22; hour++) {
+      labels.push(`${hour.toString().padStart(2, '0')}h`);
+      const total = sales
+        .filter(s => new Date(s.createdAt).getHours() === hour)
+        .reduce((sum, s) => sum + s.total, 0);
+      values.push(total);
+    }
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Receita por horário',
+          data: values,
+          backgroundColor: 'rgba(236, 72, 153, 0.7)',
+          borderRadius: 6,
+          maxBarThickness: 20,
+        },
+      ],
+    };
+  });
+
+  protected readonly dailyHourChartOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => this.pdv.money(ctx.parsed.y ?? 0),
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+      },
+      y: {
+        grid: { color: '#e5e7eb' },
+        ticks: {
+          callback: (value) => this.pdv.money(Number(value)),
+        },
+      },
+    },
+  };
+
+  protected readonly dailyHourCountChartData = computed<ChartConfiguration<'bar'>['data']>(() => {
+    const orders = this.pdv.todayOrders().filter(o => !o.cancelled);
+    const labels: string[] = [];
+    const values: number[] = [];
+    for (let hour = 6; hour <= 22; hour++) {
+      labels.push(`${hour.toString().padStart(2, '0')}h`);
+      const count = orders.filter(o => new Date(o.createdAt).getHours() === hour).length;
+      values.push(count);
+    }
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Pedidos por horário',
+          data: values,
+          backgroundColor: 'rgba(59, 130, 246, 0.7)',
+          borderRadius: 6,
+          maxBarThickness: 20,
+        },
+      ],
+    };
+  });
+
+  protected readonly dailyHourCountChartOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+    },
+    scales: {
+      x: { grid: { display: false } },
+      y: {
+        grid: { color: '#e5e7eb' },
+        ticks: { precision: 0 },
+      },
+    },
+  };
+
+  protected readonly topDailyItems = computed(() => {
+    const sales = this.pdv.todaySales().filter(s => !s.cancelled);
+    const map = new Map<string, { name: string; qty: number; total: number }>();
+    for (const s of sales) {
+      const key = s.description;
+      const entry = map.get(key) ?? { name: key, qty: 0, total: 0 };
+      entry.qty += s.quantity;
+      entry.total += s.total;
+      map.set(key, entry);
+    }
+    return Array.from(map.values())
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 15);
+  });
+
+  protected readonly monthlyDailyPaymentChartData = computed<ChartConfiguration<'bar'>['data']>(() => {
+    const monthKey = this.pdv.getCurrentMonthKey();
+    const sales = this.pdv.sales().filter(s => !s.cancelled && s.createdAt.startsWith(monthKey));
+    if (sales.length === 0) {
+      return { labels: [], datasets: [] };
+    }
+    const daysSet = new Set<number>();
+    const map = new Map<string, number>();
+    for (const s of sales) {
+      const d = new Date(s.createdAt);
+      const day = d.getDate();
+      const method = (s.paymentMethod ?? 'outros') as SalePaymentMethod;
+      daysSet.add(day);
+      const key = `${day}-${method}`;
+      map.set(key, (map.get(key) ?? 0) + s.total);
+    }
+    const days = Array.from(daysSet).sort((a, b) => a - b);
+    const labels = days.map(d => d.toString().padStart(2, '0'));
+
+    const colors: Record<SalePaymentMethod, string> = {
+      dinheiro: 'rgba(16, 185, 129, 0.8)',
+      debito: 'rgba(59, 130, 246, 0.8)',
+      credito: 'rgba(139, 92, 246, 0.8)',
+      pix: 'rgba(251, 113, 133, 0.8)',
+      outros: 'rgba(148, 163, 184, 0.8)',
+    };
+
+    const datasets = this.paymentMethods.map(method => ({
+      label: this.paymentMethodLabels[method],
+      backgroundColor: colors[method],
+      data: days.map(day => map.get(`${day}-${method}`) ?? 0),
+      stack: 'pagamentos',
+      borderRadius: 4,
+      maxBarThickness: 18,
+    }));
+
+    return { labels, datasets };
+  });
+
+  protected readonly monthlyDailyPaymentChartOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true,
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const label = ctx.dataset.label ?? '';
+            const val = ctx.parsed.y ?? 0;
+            return `${label}: ${this.pdv.money(val)}`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        stacked: true,
+        grid: { display: false },
+      },
+      y: {
+        stacked: true,
+        grid: { color: '#e5e7eb' },
+        ticks: { callback: (v) => this.pdv.money(Number(v)) },
+      },
+    },
+  };
+
+  protected readonly topMonthlyItems = computed(() => {
+    const monthKey = this.pdv.getCurrentMonthKey();
+    const sales = this.pdv.sales().filter(s => !s.cancelled && s.createdAt.startsWith(monthKey));
+    const map = new Map<string, { name: string; qty: number; total: number }>();
+    for (const s of sales) {
+      const key = s.description;
+      const entry = map.get(key) ?? { name: key, qty: 0, total: 0 };
+      entry.qty += s.quantity;
+      entry.total += s.total;
+      map.set(key, entry);
+    }
+    return Array.from(map.values())
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 15);
+  });
+
+  protected readonly monthlyPaymentSummaryChartData = computed<ChartConfiguration<'bar'>['data']>(() => {
+    const monthKey = this.pdv.getCurrentMonthKey();
+    const byMethod = this.pdv.getMonthlyPaymentsByMethod(monthKey);
+    const labels = this.paymentMethods.map(m => this.paymentMethodLabels[m]);
+    const values = this.paymentMethods.map(m => byMethod[m].total);
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Receita no mês',
+          data: values,
+          backgroundColor: [
+            'rgba(16, 185, 129, 0.8)',
+            'rgba(59, 130, 246, 0.8)',
+            'rgba(139, 92, 246, 0.8)',
+            'rgba(251, 113, 133, 0.8)',
+            'rgba(148, 163, 184, 0.8)',
+          ],
+          borderRadius: 6,
+        },
+      ],
+    };
+  });
+
+  protected readonly monthlyPaymentSummaryChartOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true,
+    indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => this.pdv.money(ctx.parsed.x ?? 0),
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { color: '#e5e7eb' },
+        ticks: { callback: (v) => this.pdv.money(Number(v)) },
+      },
+      y: { grid: { display: false } },
+    },
+  };
   protected readonly filteredProducts = computed(() => {
     const query = this.searchQuery().trim().toLowerCase();
     const catId = this.selectedCategory();
