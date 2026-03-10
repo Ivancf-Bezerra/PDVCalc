@@ -719,7 +719,8 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
   color: var(--hy-text-body);
     cursor: pointer;
 }
-.pdv-check-wrap input[type="checkbox"] { cursor: pointer; }
+.pdv-check-wrap input[type="checkbox"],
+.pdv-check-wrap input[type="radio"] { cursor: pointer; }
 .pdv-input-inline { width: 6rem; }
 .pdv-table-items { min-width: 42rem; }
 
@@ -734,6 +735,42 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
 .pdv-page h1 { margin-bottom: var(--space-2); }
 .pdv-page .pdv-intro { margin-bottom: var(--space-3); color: var(--hy-text-muted); font-size: 0.75rem; }
 .pdv-page .pdv-intro-example { font-size: 0.7rem; font-style: italic; margin-top: -0.5rem; }
+.pdv-ifood-info-card {
+  margin-bottom: var(--space-4);
+}
+.pdv-ifood-info-card .explain-box + .explain-box {
+  margin-top: var(--space-2);
+}
+.pdv-ifood-info-card .explain-box {
+  background: transparent;
+  border: none;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 0;
+}
+.pdv-ifood-controls {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  align-items: flex-start;
+}
+.pdv-ifood-control {
+  grid-column: span 6;
+}
+ .pdv-ifood-hint {
+   grid-column: 1 / -1;
+   font-size: 0.75rem;
+ }
+@media (max-width: 768px) {
+  .pdv-ifood-control { grid-column: span 12; }
+}
+.pdv-ifood-plan-group {
+  margin-top: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
 .pdv-page .pdv-card {
   background: var(--hy-bg-card);
   border: 1px solid var(--hy-border);

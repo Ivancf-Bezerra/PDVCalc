@@ -1,14 +1,20 @@
 <div class="pdv-page">
   <h2 class="pdv-panel-title">Calculadora iFood</h2>
-  <p class="pdv-intro">
-    Calcule o <strong>preço correto</strong> a cobrar no iFood para continuar recebendo o mesmo valor líquido.
-    A taxa é cobrada <em>sobre o valor final</em>, então somar "preço + taxa%" está errado — use a fórmula:
-    <strong>Preço = Valor líquido ÷ (1 − taxa)</strong>.
-  </p>
-  <p class="pdv-intro pdv-intro-example">
-    Exemplo: para receber R$ 50 com taxa de 27%, o preço correto é R$ 50 ÷ 0,73 ≈ R$ 68,49
-    (e não R$ 63,50, que daria apenas R$ 46,35 líquidos).
-  </p>
+  <div class="card block pdv-ifood-info-card">
+    <div class="explain-box">
+      <strong>Como funciona</strong><br>
+      Calcule o <strong>preço correto</strong> a cobrar no iFood para continuar recebendo o mesmo valor líquido.
+      A taxa é cobrada <em>sobre o valor final</em>, então somar apenas <code>preço + taxa%</code> está errado.
+      A fórmula correta é: <strong>Preço = Valor líquido ÷ (1 − taxa)</strong>.
+    </div>
+    <div class="explain-box">
+      <strong>Exemplo prático</strong><br>
+      Para receber <strong>R$ 50</strong> com taxa de <strong>27%</strong>, o preço correto é
+      <code>R$ 50 ÷ 0,73 ≈ R$ 68,49</code>.
+      Se você fizesse <code>R$ 50 + 27% = R$ 63,50</code>, depois da taxa sobrariam apenas
+      <strong>R$ 46,35</strong> líquidos.
+    </div>
+  </div>
 
   <div class="pdv-ifood-controls">
     <div class="pdv-ifood-control">
