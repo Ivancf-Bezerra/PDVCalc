@@ -45,14 +45,14 @@ export class PdvIfoodCalculatorComponent {
   protected readonly itemsWithCalc = computed(() => {
     const pct = Math.max(0, this.effectivePct()) / 100;
     return this.catalog.items().map((item) => {
-      // Valor líquido desejado (o que você quer receber — preço em uso do BD)
+      // Valor que você quer receber = exatamente o preço do item no BD ITEMS
       const liquidTarget = this.effectivePrice(item);
-      // Fórmula correta: P = L / (1 - taxa). A taxa incide sobre o valor final.
-      // Errado: L + taxa% (ex: 50 + 27% = 63,50 → após 27% sobra 46,35).
-      // Certo: P = 50 / (1 - 0,27) = 50 / 0,73 ≈ 68,49 → após 27% sobra 50.
-      const grossPrice = pct >= 1 ? liquidTarget : liquidTarget / (1 - pct);
-      const fee = grossPrice * pct;
-      const net = grossPrice - fee;
+      // Preço a cobrar no iFood: P = L / (1 - taxa). Arredondado a 2 decimais.
+      const grossPriceRaw = pct >= 1 ? liquidTarget : liquidTarget / (1 - pct);
+      const grossPrice = Math.round(grossPriceRaw * 100) / 100;
+      // Taxa e líquido derivados para que o líquido seja exatamente liquidTarget (evita drift por float)
+      const fee = Math.round((grossPrice - liquidTarget) * 100) / 100;
+      const net = liquidTarget;
       return {
         item,
         itemId: item.id,

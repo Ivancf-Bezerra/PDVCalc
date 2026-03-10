@@ -736,7 +736,7 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
 .pdv-page .pdv-intro { margin-bottom: var(--space-3); color: var(--hy-text-muted); font-size: 0.75rem; }
 .pdv-page .pdv-intro-example { font-size: 0.7rem; font-style: italic; margin-top: -0.5rem; }
 .pdv-ifood-info-card {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 .pdv-ifood-info-card .explain-box + .explain-box {
   margin-top: var(--space-2);
@@ -752,7 +752,7 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
   align-items: flex-start;
 }
 .pdv-ifood-control {
@@ -770,6 +770,16 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+}
+/* Calculadora iFood: mais espaço entre card do valor sugerido e o bloco de composição */
+.pdv-page .pricing-card {
+  margin-bottom: var(--space-6);
+}
+.pdv-page .pricing-resumo-wrap {
+  margin-bottom: var(--space-4);
+}
+.pdv-page .pricing-resumo-wrap .section-title {
+  margin-bottom: var(--space-4);
 }
 .pdv-page .pdv-card {
   background: var(--hy-bg-card);
