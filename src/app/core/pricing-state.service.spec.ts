@@ -90,22 +90,25 @@ describe('PricingStateService', () => {
     expect(result.ok).toBe(false);
   });
 
-  it('deve calcular preço sugerido pelo markup com margem 30%', () => {
+  it('deve calcular preço sugerido automaticamente (break-even)', () => {
     service.addRecipe();
     const recipeId = service.recipes()[0].id;
     service.selectRecipe(recipeId);
     service.updateRecipe(recipeId, { yieldUnits: 10, minutes: 0 });
     service.addRecipeItem(recipeId);
     const itemId = service.selectedRecipe()!.items[0].id;
+    // cmvUnit = (10/100 * 100) / 10 = 1, fees = 0
+    // suggestedPrice = unitCost / (1 - fees) = 1 / 1 = 1
     service.updateRecipeItem(recipeId, itemId, { pricePaid: 10, qtdTotal: 100, qtdUsed: 100 });
-    service.updatePricing({ mode: 'byMargin', desiredMargin: 30 });
     const result = service.getPricingResult();
     expect(result.ok).toBe(true);
-    expect(result.suggestedPrice).toBeGreaterThan(result.unitCost);
-    expect(result.realMargin).toBeCloseTo(30, 1);
+    expect(result.suggestedPrice).toBeGreaterThan(0);
+    // com taxas = 0%, preço sugerido = unitCost exato
+    expect(result.suggestedPrice).toBeCloseTo(result.unitCost, 5);
+    expect(result.markup).toBeCloseTo(1, 5);
   });
 
-  it('deve calcular margem real ao usar modo byMarket', () => {
+  it('deve gerar markup dinâmico baseado em overhead quando há taxas', () => {
     service.addRecipe();
     const recipeId = service.recipes()[0].id;
     service.selectRecipe(recipeId);
@@ -113,11 +116,32 @@ describe('PricingStateService', () => {
     service.addRecipeItem(recipeId);
     const itemId = service.selectedRecipe()!.items[0].id;
     service.updateRecipeItem(recipeId, itemId, { pricePaid: 10, qtdTotal: 100, qtdUsed: 100 });
-    service.updatePricing({ mode: 'byMarket', marketPrice: 5 });
+    // Adiciona taxa de 15%: denom = 0.85, preço sugerido = 1 / 0.85 ≈ 1.176
+    service.addFeePct();
+    const feeId = service.fees().pct[0].id;
+    service.updateFeePct(feeId, { pct: 15 });
     const result = service.getPricingResult();
     expect(result.ok).toBe(true);
-    expect(result.suggestedPrice).toBe(5);
-    expect(result.realMargin).toBeGreaterThan(0);
+    expect(result.suggestedPrice).toBeCloseTo(1 / 0.85, 2);
+    expect(result.feesPct).toBeCloseTo(15, 1);
+  });
+
+  it('deve calcular análise de mercado quando preço de mercado é informado', () => {
+    service.addRecipe();
+    const recipeId = service.recipes()[0].id;
+    service.selectRecipe(recipeId);
+    service.updateRecipe(recipeId, { yieldUnits: 10, minutes: 0 });
+    service.addRecipeItem(recipeId);
+    const itemId = service.selectedRecipe()!.items[0].id;
+    service.updateRecipeItem(recipeId, itemId, { pricePaid: 10, qtdTotal: 100, qtdUsed: 100 });
+    service.updatePricing({ marketPrice: 5 });
+    const result = service.getPricingResult();
+    expect(result.ok).toBe(true);
+    // preço sugerido é automático (não é o marketPrice)
+    expect(result.suggestedPrice).toBeCloseTo(result.unitCost, 5);
+    // análise de mercado: netProfit = 5 * 1 - 1 = 4
+    expect(result.marketNetProfit).toBeCloseTo(4, 2);
+    expect(result.marketMargin).toBeGreaterThan(0);
   });
 
   // --- CRUD de receitas ---

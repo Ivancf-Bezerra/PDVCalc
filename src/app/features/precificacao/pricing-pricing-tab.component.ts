@@ -17,20 +17,27 @@ export class PricingPricingTabComponent {
   protected readonly unitLabel = computed(() => this.pricing.getUnitLabel(this.pricing.selectedRecipe()));
   protected readonly pricingResult = computed(() => this.pricing.getPricingResult());
 
-  protected updatePricingMode(value: 'byMargin' | 'byMarket'): void {
-    this.pricing.updatePricing({ mode: value ?? 'byMargin' });
-  }
-  protected updateDesiredMargin(value: unknown): void {
-    this.pricing.updatePricing({ desiredMargin: safeNum(value) });
-  }
+  protected readonly hasMarketAnalysis = computed(() => {
+    const r = this.pricingResult();
+    return r.ok && this.pricing.pricing().marketPrice > 0;
+  });
+
   protected updateMarketPrice(value: unknown): void {
     this.pricing.updatePricing({ marketPrice: safeNum(value) });
   }
+
   protected pricingResumoPreco(): string {
-    const u = this.pricingResult().unitCost;
-    const p = this.pricingResult().suggestedPrice;
-    if (u <= 0) return '-';
-    if (this.pricing.pricing().mode === 'byMarket') return `R$ ${p.toFixed(2)} (preço informado)`;
-    return `R$ ${p.toFixed(2)} (custo ÷ denominador)`;
+    const res = this.pricingResult();
+    if (res.unitCost <= 0) return '-';
+    return `R$ ${res.prePackPrice.toFixed(2)} (base) + R$ ${(res.unitCost / (1 - res.feesPct / 100) - res.prePackPrice).toFixed(2)} (emb. c/ taxas) = R$ ${res.suggestedPrice.toFixed(2)}`;
+  }
+
+  protected marketPriceLabel(): string {
+    const res = this.pricingResult();
+    const mp = this.pricing.pricing().marketPrice;
+    if (mp <= 0 || !res.ok) return '';
+    const diff = mp - res.suggestedPrice;
+    const sign = diff >= 0 ? '+' : '';
+    return `${sign}R$ ${diff.toFixed(2)} em relação ao preço sugerido`;
   }
 }

@@ -71,8 +71,7 @@ export interface PricingState {
   categories: Category[];
   selectedRecipeId: string | null;
   pricing: {
-    mode: 'byMargin' | 'byMarket';
-    desiredMargin: number;
+    /** Preço de mercado para análise comparativa (opcional) */
     marketPrice: number;
   };
   database: {
@@ -95,15 +94,34 @@ export interface UnitCostParts {
   laborUnit: number;
   fixedUnit: number;
   varUnit: number;
+  /** Soma de mão de obra + rateio fixo + variáveis por unidade (sem embalagem) */
+  overheadUnit: number;
 }
 
 export interface PricingResult {
+  /** Custo total por unidade: CMV + embalagem + overhead */
   unitCost: number;
+  /** Custo dos ingredientes por unidade */
+  cmvUnit: number;
+  /** Custo das embalagens por unidade */
+  packUnit: number;
+  /** Mão de obra + rateio fixo + variáveis por unidade */
+  overheadUnit: number;
+  /** Preço base = (CMV + overhead) / (1 − taxas). Embalagem não é marcada com lucro extra */
+  prePackPrice: number;
+  /** Preço sugerido automático: cobre todos os custos e taxas */
   suggestedPrice: number;
+  /** Markup dinâmico = prePackPrice / CMV */
   markup: number;
+  /** Lucro líquido ao vender pelo preço sugerido (≈ 0, pois é break-even) */
   netProfitUnit: number;
+  /** Margem líquida ao vender pelo preço sugerido (≈ 0%) */
   realMargin: number;
   feesPct: number;
+  /** Lucro líquido ao vender pelo preço de mercado informado */
+  marketNetProfit: number;
+  /** Margem líquida ao vender pelo preço de mercado informado */
+  marketMargin: number;
   ok: boolean;
   reason: string;
 }
@@ -127,7 +145,7 @@ const DEFAULT_STATE: PricingState = {
   recipes: [],
   categories: [],
   selectedRecipeId: null,
-  pricing: { mode: 'byMargin', desiredMargin: 30, marketPrice: 0 },
+  pricing: { marketPrice: 0 },
   database: { ingredients: [], packaging: [] },
 };
 
@@ -279,7 +297,8 @@ export class PricingStateService {
     const t = this.calcRecipeTotals(r);
     const fixedUnit = this.fixedPerUnitForRecipe(r);
     const varUnit = this.varFixedTotal();
-    const unitCost = t.cmvUnit + t.packUnit + t.laborUnit + fixedUnit + varUnit;
+    const overheadUnit = t.laborUnit + fixedUnit + varUnit;
+    const unitCost = t.cmvUnit + t.packUnit + overheadUnit;
     return {
       unitCost,
       parts: {
@@ -288,52 +307,71 @@ export class PricingStateService {
         laborUnit: t.laborUnit,
         fixedUnit,
         varUnit,
+        overheadUnit,
       },
     };
   }
 
   getPricingResult(): PricingResult {
-    const { unitCost } = this.computeUnitCost();
+    const { unitCost, parts } = this.computeUnitCost();
     const fees = clamp(this.feesPctTotal() / 100, 0, 0.95);
-    const mode = this.stateSignal().pricing.mode || 'byMargin';
+
+    const cmvUnit = parts?.cmvUnit ?? 0;
+    const packUnit = parts?.packUnit ?? 0;
+    const overheadUnit = parts?.overheadUnit ?? 0;
+    // Base para o markup: CMV + overhead (sem embalagem)
+    const baseCostNoPack = cmvUnit + overheadUnit;
+
     const out: PricingResult = {
       unitCost,
+      cmvUnit,
+      packUnit,
+      overheadUnit,
+      prePackPrice: 0,
       suggestedPrice: 0,
       markup: 0,
       netProfitUnit: 0,
       realMargin: 0,
       feesPct: fees * 100,
+      marketNetProfit: 0,
+      marketMargin: 0,
       ok: true,
       reason: '',
     };
+
     if (unitCost <= 0) {
       out.ok = false;
       out.reason = 'Preencha uma receita e custos para calcular.';
       return out;
     }
-    if (mode === 'byMargin') {
-      const desired = clamp(safeNum(this.stateSignal().pricing.desiredMargin) / 100, 0, 0.95);
-      const denom = 1 - fees - desired;
-      if (denom <= 0) {
-        out.ok = false;
-        out.reason = 'Taxas + margem ≥ 100%. Impossível precificar.';
-        return out;
-      }
-      out.suggestedPrice = unitCost / denom;
-      out.realMargin = desired * 100;
-    } else {
-      const market = clamp(safeNum(this.stateSignal().pricing.marketPrice), 0, 999999);
-      out.suggestedPrice = market;
-      out.realMargin = market > 0 ? ((market * (1 - fees) - unitCost) / market) * 100 : 0;
+
+    const denom = 1 - fees;
+    if (denom <= 0) {
+      out.ok = false;
+      out.reason = 'Taxas ≥ 100%. Impossível precificar.';
+      return out;
     }
-    if (out.suggestedPrice > 0) {
-      out.markup = out.suggestedPrice / unitCost;
-      out.netProfitUnit = out.suggestedPrice * (1 - fees) - unitCost;
+
+    // Preço base: cobre CMV + overhead + taxas sobre essa base
+    // Embalagem não influencia o markup — é coberta separadamente pelo denominador
+    out.prePackPrice = baseCostNoPack / denom;
+    // Preço sugerido automático: cobre todos os custos e taxas (break-even)
+    out.suggestedPrice = unitCost / denom;
+    // Markup dinâmico: quanto o CMV precisa ser multiplicado para absorber overhead + taxas
+    out.markup = cmvUnit > 0 ? out.prePackPrice / cmvUnit : 0;
+    // Por definição do break-even, netProfitUnit ≈ 0
+    out.netProfitUnit = out.suggestedPrice * (1 - fees) - unitCost;
+    out.realMargin = out.suggestedPrice > 0 ? (out.netProfitUnit / out.suggestedPrice) * 100 : 0;
+
+    // Análise comparativa com preço de mercado (opcional)
+    const market = clamp(safeNum(this.stateSignal().pricing.marketPrice), 0, 999999);
+    if (market > 0) {
+      out.marketNetProfit = market * (1 - fees) - unitCost;
+      out.marketMargin = (out.marketNetProfit / market) * 100;
     }
-    out.ok = out.netProfitUnit >= 0;
-    out.reason = out.ok
-      ? 'Números coerentes. Você tem uma base sólida para precificar e vender.'
-      : 'A margem está negativa ou muito baixa. Vale revisar custos, preço ou margem desejada.';
+
+    out.ok = true;
+    out.reason = 'Preço calculado automaticamente: cobre todos os custos e taxas configurados.';
     return out;
   }
 
@@ -664,7 +702,7 @@ export class PricingStateService {
         },
       ],
       selectedRecipeId: r1,
-      pricing: { mode: 'byMargin', desiredMargin: 32, marketPrice: 0 },
+      pricing: { marketPrice: 0 },
       database: {
         ingredients: [
           { id: uid(), name: 'Farinha de trigo', pricePaid: 4.8, qtdTotal: 1000 },
