@@ -733,6 +733,7 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
 }
 .pdv-page h1 { margin-bottom: var(--space-2); }
 .pdv-page .pdv-intro { margin-bottom: var(--space-3); color: var(--hy-text-muted); font-size: 0.75rem; }
+.pdv-page .pdv-intro-example { font-size: 0.7rem; font-style: italic; margin-top: -0.5rem; }
 .pdv-page .pdv-card {
   background: var(--hy-bg-card);
   border: 1px solid var(--hy-border);
@@ -2562,6 +2563,7 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
   }
   @media (max-width: 992px) { .result { grid-column: span 12; } }
   .result h3 { margin: 0 0 8px; font-size: 0.7rem; color: var(--hy-text-body); font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+  .result .result-hint { margin: 0 0 6px; font-size: 0.65rem; color: var(--hy-text-muted); font-weight: 400; }
   .value { font-size: 1rem; font-weight: 800; color: var(--hy-text-title); }
   .value.primary { color: var(--hy-primary); }
   .value.success { color: var(--hy-success); }

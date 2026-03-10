@@ -13,6 +13,7 @@ import { PdvDailyReportComponent } from './pdv-daily-report.component';
 import { PdvMonthlyReportComponent } from './pdv-monthly-report.component';
 import { PdvYearlyReportComponent } from './pdv-yearly-report.component';
 import { PdvItemsDatabaseComponent } from './pdv-items-database.component';
+import { PdvIfoodCalculatorComponent } from './pdv-ifood-calculator.component';
 
 export interface OrderSnapshotForPrint {
   lines: CartLineItem[];
@@ -35,6 +36,7 @@ const LS_CATEGORIES_ORDER = 'pdv.categoriesOrder.v1';
     PdvMonthlyReportComponent,
     PdvYearlyReportComponent,
     PdvItemsDatabaseComponent,
+    PdvIfoodCalculatorComponent,
   ],
   templateUrl: './pdv.component.html',
   styleUrl: './pdv.component.scss',
@@ -83,6 +85,7 @@ export class PdvComponent implements OnInit, OnDestroy {
     { id: 'tab-monthly', label: 'Relatório mensal' },
     { id: 'tab-yearly', label: 'Relatório anual' },
     { id: 'tab-bd-items', label: 'BD ITEMS' },
+    { id: 'tab-ifood', label: 'Calculadora iFood' },
   ];
 
   protected readonly selectedCategory = signal<PdvCategoryId>(PDV_CATEGORIES[0].id);

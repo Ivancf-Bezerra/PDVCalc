@@ -52,6 +52,7 @@ export class App implements OnInit {
     { id: 'tab-monthly', label: 'Relatório mensal', icon: 'calendar' },
     { id: 'tab-yearly', label: 'Relatório anual', icon: 'bar-chart-2' },
     { id: 'tab-bd-items', label: 'BD ITEMS', icon: 'database' },
+    { id: 'tab-ifood', label: 'Calculadora iFood', icon: 'percent' },
   ];
   protected readonly precificacaoSubmenuItems: Array<{ id: string; label: string; icon: string }> = [
     { id: 'tab-recipes', label: 'Receitas', icon: 'book-open' },

@@ -1,0 +1,217 @@
+<div class="pdv-page">
+  <h2 class="pdv-panel-title">Calculadora iFood</h2>
+  <p class="pdv-intro">
+    Calcule o <strong>preço correto</strong> a cobrar no iFood para continuar recebendo o mesmo valor líquido.
+    A taxa é cobrada <em>sobre o valor final</em>, então somar "preço + taxa%" está errado — use a fórmula:
+    <strong>Preço = Valor líquido ÷ (1 − taxa)</strong>.
+  </p>
+  <p class="pdv-intro pdv-intro-example">
+    Exemplo: para receber R$ 50 com taxa de 27%, o preço correto é R$ 50 ÷ 0,73 ≈ R$ 68,49
+    (e não R$ 63,50, que daria apenas R$ 46,35 líquidos).
+  </p>
+
+  <div class="pdv-ifood-controls">
+    <div class="pdv-ifood-control">
+      <label>Plano iFood</label>
+      <div class="pdv-ifood-plan-group">
+        <label class="pdv-check-wrap">
+          <input
+            type="radio"
+            name="ifoodPlan"
+            [checked]="plan() === 'basic'"
+            (change)="setPlan('basic')"
+          >
+          <span>Básico (12% — entrega pela loja)</span>
+        </label>
+        <label class="pdv-check-wrap">
+          <input
+            type="radio"
+            name="ifoodPlan"
+            [checked]="plan() === 'delivery'"
+            (change)="setPlan('delivery')"
+          >
+          <span>Entrega (24% — entrega pela logística iFood)</span>
+        </label>
+      </div>
+    </div>
+    <div class="pdv-ifood-control">
+      <label>Forma de pagamento</label>
+      <div class="pdv-ifood-plan-group">
+        <label class="pdv-check-wrap">
+          <input
+            type="radio"
+            name="ifoodPayment"
+            [checked]="paidOnline()"
+            (change)="setPaidOnline(true)"
+          >
+          <span>Pago online (+ 3,5%)</span>
+        </label>
+        <label class="pdv-check-wrap">
+          <input
+            type="radio"
+            name="ifoodPayment"
+            [checked]="!paidOnline()"
+            (change)="setPaidOnline(false)"
+          >
+          <span>Pago na entrega (0% adicional)</span>
+        </label>
+      </div>
+    </div>
+    <p class="pdv-ifood-hint">
+      Taxa efetiva atual: <strong>{{ effectivePct() | number:'1.1-1' }}%</strong>
+      (plano + pagamento online, sem considerar mensalidade fixa).
+    </p>
+  </div>
+
+  <div class="card block">
+    <div class="recipe-picker-bar">
+      <div class="recipe-picker-label">Item atual (BD ITEMS)</div>
+      <div class="recipe-picker-current">
+        {{ selectedRow()?.item?.name || 'Nenhum item selecionado' }}
+        @if (selectedRow()?.item?.useManualPrice) {
+          <span class="pdv-tag-manual">manual</span>
+        }
+      </div>
+      <div class="recipe-picker-actions">
+        <button type="button" class="btn btn-primary" (click)="openItemSearchModal()">
+          <lucide-angular name="database" [size]="16" aria-hidden="true"></lucide-angular>
+          Selecionar item do BD
+        </button>
+      </div>
+    </div>
+
+    @if (!selectedRow()) {
+      <div class="recipe-empty-state">
+        <p class="recipe-empty-state-text">Nenhum item selecionado.</p>
+        <p class="recipe-empty-state-hint">
+          Use o botão acima para escolher um item salvo em <strong>BD ITEMS</strong> e simular o preço mínimo no iFood.
+        </p>
+      </div>
+    } @else {
+      <div class="results results-stack">
+        <div class="result">
+          <h3>Valor líquido desejado</h3>
+          <p class="result-hint">O que você quer receber (preço em uso do BD)</p>
+          <div class="value">{{ catalog.money(selectedRow()!.liquidTarget) }}</div>
+        </div>
+        <div class="result">
+          <h3>Taxa iFood efetiva</h3>
+          <p class="result-hint">Plano + pagamento online</p>
+          <div class="value">{{ effectivePct() | number:'1.1-1' }}%</div>
+        </div>
+        <div class="result">
+          <h3>Preço a cobrar no iFood</h3>
+          <p class="result-hint">Fórmula: líquido ÷ (1 − taxa)</p>
+          <div class="value success">{{ catalog.money(selectedRow()!.grossPrice) }}</div>
+        </div>
+        <div class="result">
+          <h3>Valor da taxa iFood</h3>
+          <p class="result-hint">Descontado pelo iFood sobre o preço final</p>
+          <div class="value danger">{{ catalog.money(selectedRow()!.fee) }}</div>
+        </div>
+        <div class="result">
+          <h3>Valor líquido após taxa</h3>
+          <p class="result-hint">O que você recebe (deve bater com o desejado)</p>
+          <div class="value">{{ catalog.money(selectedRow()!.net) }}</div>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (itemSearchModalOpen()) {
+    <div class="recipe-search-modal-backdrop" role="presentation" (click)="closeItemSearchModal()"></div>
+    <div class="recipe-search-modal" role="dialog" aria-modal="true" aria-labelledby="ifood-item-search-title">
+      <div class="recipe-search-modal-inner" (click)="$event.stopPropagation()">
+        <div class="recipe-search-modal-header">
+          <h2 id="ifood-item-search-title" class="recipe-search-modal-title">Selecionar item do BD</h2>
+          <button type="button" class="btn recipe-search-modal-close" (click)="closeItemSearchModal()" aria-label="Fechar">
+            <lucide-angular name="x" [size]="16" aria-hidden="true"></lucide-angular>
+            Fechar
+          </button>
+        </div>
+        <div class="recipe-search-modal-body">
+          <input
+            type="search"
+            class="recipe-search-input"
+            placeholder="Digite para filtrar por nome..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+            aria-label="Filtrar itens"
+          >
+          <div class="recipe-search-list">
+            @if (filteredItemsWithCalc().length === 0) {
+              <p class="recipe-search-empty">
+                {{ searchQuery() ? 'Nenhum item encontrado.' : 'Nenhum item no BD ITEMS.' }}
+              </p>
+            } @else {
+              @for (row of paginate(filteredItemsWithCalc(), 'ifood-calc'); track row.itemId) {
+                <div
+                  class="recipe-search-item"
+                  [class.selected]="selectedItemId() === row.itemId"
+                  (click)="selectItemAndClose(row.itemId)"
+                  role="button"
+                  tabindex="0"
+                >
+                  <div class="recipe-search-item-main">
+                    <span class="recipe-search-item-name">{{ row.item.name }}</span>
+                    <span class="recipe-search-item-meta">
+                      Valor atual: {{ catalog.money(row.liquidTarget) }}
+                    </span>
+                  </div>
+                </div>
+              }
+              @let list = filteredItemsWithCalc();
+              @let info = paginationInfo(list, 'ifood-calc');
+              @if (list.length > 0) {
+                <div class="table-pagination recipe-search-pagination">
+                  <span class="table-pagination-size">
+                    Exibir
+                    <select
+                      class="table-pagination-select"
+                      [ngModel]="getTablePageSize('ifood-calc')"
+                      (ngModelChange)="onPageSizeChange('ifood-calc', $event)"
+                    >
+                      @for (opt of pageSizeOptions; track opt) {
+                        <option [value]="opt">{{ opt }}</option>
+                      }
+                    </select>
+                    itens
+                  </span>
+                  <span class="table-pagination-range">
+                    {{ info.start }}-{{ info.end }} de {{ info.total }}
+                  </span>
+                  @if (info.totalPages > 1) {
+                    <div class="table-pagination-nav">
+                      <button
+                        type="button"
+                        class="table-pagination-btn"
+                        (click)="setTablePage('ifood-calc', info.currentPage - 1)"
+                        [disabled]="info.currentPage <= 1"
+                        aria-label="Página anterior"
+                      >
+                        Anterior
+                      </button>
+                      <span class="table-pagination-page">
+                        Página {{ info.currentPage }} de {{ info.totalPages }}
+                      </span>
+                      <button
+                        type="button"
+                        class="table-pagination-btn"
+                        (click)="setTablePage('ifood-calc', info.currentPage + 1)"
+                        [disabled]="info.currentPage >= info.totalPages"
+                        aria-label="Próxima página"
+                      >
+                        Próxima
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
