@@ -1,0 +1,134 @@
+<div class="pdv-page">
+  <h2 class="pdv-panel-title">Banco de dados dos itens (BD ITEMS)</h2>
+  <p class="pdv-intro">
+    Itens vindos da calculadora de precificação. Ative "Valor manual" para
+    definir um preço de venda próprio.
+  </p>
+
+  <div
+    class="pdv-table-wrap"
+    [class.table-min-5-rows]="paginatedLength(catalog.items(), 'bd-items') < 5"
+  >
+    <table class="pdv-table pdv-table-items">
+      <thead>
+        <tr>
+          <th scope="col">Item</th>
+          <th scope="col" class="text-right">CMV</th>
+          <th scope="col" class="text-right">Taxas (%)</th>
+          <th scope="col" class="text-right">Valor sugerido</th>
+          <th scope="col">Valor manual</th>
+          <th scope="col" class="text-right">Preço em uso</th>
+          <th scope="col" class="text-right"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of paginate(catalog.items(), 'bd-items'); track item.id) {
+          <tr>
+            <td class="cell-title">{{ item.name }}</td>
+            <td class="text-right">{{ catalog.money(item.cmv) }}</td>
+            <td class="text-right">
+              {{ item.feesPct | number:'1.1-1' }}%
+            </td>
+            <td class="text-right">
+              {{ catalog.money(item.suggestedPrice) }}
+            </td>
+            <td>
+              <div class="pdv-bd-row">
+                <label class="pdv-check-wrap">
+                  <input
+                    type="checkbox"
+                    [checked]="item.useManualPrice"
+                    (change)="setUseManual(item, !item.useManualPrice)"
+                  >
+                  <span>Usar manual</span>
+                </label>
+                @if (item.useManualPrice) {
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    class="pdv-input pdv-input-inline"
+                    [ngModel]="item.manualPrice"
+                    (ngModelChange)="setManualPrice(item, $event ?? 0)"
+                  >
+                }
+              </div>
+            </td>
+            <td class="text-right cell-total">
+              {{ catalog.money(effectivePrice(item)) }}
+            </td>
+            <td class="text-right">
+              <button
+                type="button"
+                class="pdv-btn-remove pdv-btn-icon-only"
+                (click)="removeItem(item.id)"
+                aria-label="Remover item"
+                title="Remover"
+              >
+                <lucide-angular name="trash-2" [size]="14" aria-hidden="true"></lucide-angular>
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="pdv-empty">
+              Nenhum item no catálogo. Salve receitas na Calculadora de
+              Precificação para que apareçam aqui.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @let bdItemsList = catalog.items();
+  @let bdItemsInfo = paginationInfo(bdItemsList, 'bd-items');
+  @if (bdItemsList.length > 0) {
+    <div class="table-pagination">
+      <span class="table-pagination-size">
+        Exibir
+        <select
+          class="table-pagination-select"
+          [ngModel]="getTablePageSize('bd-items')"
+          (ngModelChange)="onPageSizeChange('bd-items', $event)"
+        >
+          @for (opt of pageSizeOptions; track opt) {
+            <option [value]="opt">{{ opt }}</option>
+          }
+        </select>
+        itens
+      </span>
+      <span class="table-pagination-range">
+        {{ bdItemsInfo.start }}-{{ bdItemsInfo.end }} de
+        {{ bdItemsInfo.total }}
+      </span>
+      @if (bdItemsInfo.totalPages > 1) {
+        <div class="table-pagination-nav">
+          <button
+            type="button"
+            class="table-pagination-btn"
+            (click)="setTablePage('bd-items', bdItemsInfo.currentPage - 1)"
+            [disabled]="bdItemsInfo.currentPage <= 1"
+            aria-label="Página anterior"
+          >
+            Anterior
+          </button>
+          <span class="table-pagination-page">
+            Página {{ bdItemsInfo.currentPage }} de
+            {{ bdItemsInfo.totalPages }}
+          </span>
+          <button
+            type="button"
+            class="table-pagination-btn"
+            (click)="setTablePage('bd-items', bdItemsInfo.currentPage + 1)"
+            [disabled]="bdItemsInfo.currentPage >= bdItemsInfo.totalPages"
+            aria-label="Próxima página"
+          >
+            Próxima
+          </button>
+        </div>
+      }
+    </div>
+  }
+</div>
+

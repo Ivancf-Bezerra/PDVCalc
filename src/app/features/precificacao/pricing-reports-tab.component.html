@@ -1,0 +1,29 @@
+<p class="sub report-intro">Painel consolidado.</p>
+<div class="report-dashboard-card">
+  <div class="section-title">Indicadores</div>
+  <div class="metric-grid">
+    <div class="metric-card"><div class="metric-title">Custos fixos / mês</div><div class="metric-value">{{ pricing.money(pricing.fixedMonthlyTotal()) }}</div></div>
+    <div class="metric-card"><div class="metric-title">Rateio fixo / hora</div><div class="metric-value">{{ pricing.money(pricing.fixedPerHour()) }}</div></div>
+    <div class="metric-card"><div class="metric-title">Taxas (DV)</div><div class="metric-value">{{ pricing.pct(pricing.feesPctTotal()) }}</div></div>
+    <div class="metric-card"><div class="metric-title">Receitas</div><div class="metric-value">{{ recipesCount() }}</div></div>
+    <div class="metric-card"><div class="metric-title">Custo unitário atual</div><div class="metric-value">{{ pricing.money(pricingResult().unitCost) }}</div></div>
+    <div class="metric-card"><div class="metric-title">Preço sugerido</div><div class="metric-value">{{ pricing.money(pricingResult().suggestedPrice) }}</div></div>
+    <div class="metric-card"><div class="metric-title">Margem líquida</div><div class="metric-value">{{ pricing.fx(pricingResult().realMargin) }}%</div></div>
+  </div>
+</div>
+<div class="report-part card block">
+  <h3 class="report-part-title">Detalhe da receita selecionada</h3>
+  <table class="report-table">
+    <thead><tr><th>Indicador</th><th class="num">Valor</th></tr></thead>
+    <tbody>
+      <tr><td>Nome</td><td>{{ pricing.selectedRecipe()?.name ?? '-' }}</td></tr>
+      <tr><td>CMV por {{ unitLabel() }}</td><td class="num">{{ pricing.money(selectedRecipeTotals()?.cmvUnit ?? 0) }}</td></tr>
+      <tr><td>Embalagem por {{ unitLabel() }}</td><td class="num">{{ pricing.money(selectedRecipeTotals()?.packUnit ?? 0) }}</td></tr>
+      <tr><td>Rateio fixo por {{ unitLabel() }}</td><td class="num">{{ pricing.money(pricing.selectedRecipe() ? pricing.fixedPerUnitForRecipe(pricing.selectedRecipe()!) : 0) }}</td></tr>
+      <tr><td>Mão de obra por {{ unitLabel() }}</td><td class="num">{{ pricing.money(selectedRecipeTotals()?.laborUnit ?? 0) }}</td></tr>
+      <tr><td>Custo unitário total</td><td class="num">{{ pricing.money(pricingResult().unitCost) }}</td></tr>
+      <tr><td>Preço sugerido</td><td class="num">{{ pricing.money(pricingResult().suggestedPrice) }}</td></tr>
+      <tr><td>Margem líquida</td><td class="num">{{ pricing.fx(pricingResult().realMargin) }}%</td></tr>
+    </tbody>
+  </table>
+</div>

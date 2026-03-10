@@ -338,9 +338,7 @@ export class PricingStateService {
   }
 
   // --- Ações de estado ---
-  setActiveTab(tabId: string): void {
-    // apenas para compatibilidade se precisar no futuro; abas podem ser só template
-  }
+  setActiveTab(_tabId: string): void {}
 
   selectRecipe(id: string | null): void {
     this.stateSignal.update((s) => ({ ...s, selectedRecipeId: id }));

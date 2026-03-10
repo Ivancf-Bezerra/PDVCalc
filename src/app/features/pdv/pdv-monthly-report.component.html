@@ -1,0 +1,153 @@
+<div class="pdv-page">
+  <div class="pdv-daily-header">
+    <div>
+      <h2 class="pdv-panel-title">Relatório mensal</h2>
+      <p class="pdv-intro">Vendas agrupadas por mês.</p>
+    </div>
+    <div class="pdv-daily-header-actions">
+      <button
+        type="button"
+        class="pdv-order-btn pdv-order-btn-secondary"
+        (click)="printMonthlyPaymentsReport()"
+        [disabled]="pdv.monthlySales().length === 0"
+        title="Salvar ficha mensal de pagamentos (PDF)"
+      >
+        <lucide-angular name="printer" [size]="16" aria-hidden="true"></lucide-angular>
+        Salvar PDF
+      </button>
+    </div>
+  </div>
+
+  <div
+    class="pdv-table-wrap"
+    [class.table-min-5-rows]="paginatedLength(pdv.monthlySales(), 'monthly') < 5"
+  >
+    <table class="pdv-table">
+      <thead>
+        <tr>
+          <th scope="col">Mês</th>
+          <th scope="col" class="text-right">Vendas</th>
+          <th scope="col" class="text-right">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (m of paginate(pdv.monthlySales(), 'monthly'); track m.monthKey) {
+          <tr>
+            <td class="cell-title">{{ m.label }}</td>
+            <td class="text-right">{{ m.count }}</td>
+            <td class="text-right cell-total">{{ pdv.money(m.total) }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="3" class="pdv-empty">
+              Nenhuma venda registrada.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @let monthlyList = pdv.monthlySales();
+  @let monthlyInfo = paginationInfo(monthlyList, 'monthly');
+  @if (monthlyList.length > 0) {
+    <div class="table-pagination">
+      <span class="table-pagination-size">
+        Exibir
+        <select
+          class="table-pagination-select"
+          [ngModel]="getTablePageSize('monthly')"
+          (ngModelChange)="onPageSizeChange('monthly', $event)"
+        >
+          @for (opt of pageSizeOptions; track opt) {
+            <option [value]="opt">{{ opt }}</option>
+          }
+        </select>
+        itens
+      </span>
+      <span class="table-pagination-range">
+        {{ monthlyInfo.start }}-{{ monthlyInfo.end }} de
+        {{ monthlyInfo.total }}
+      </span>
+      @if (monthlyInfo.totalPages > 1) {
+        <div class="table-pagination-nav">
+          <button
+            type="button"
+            class="table-pagination-btn"
+            (click)="setTablePage('monthly', monthlyInfo.currentPage - 1)"
+            [disabled]="monthlyInfo.currentPage <= 1"
+            aria-label="Página anterior"
+          >
+            Anterior
+          </button>
+          <span class="table-pagination-page">
+            Página {{ monthlyInfo.currentPage }} de
+            {{ monthlyInfo.totalPages }}
+          </span>
+          <button
+            type="button"
+            class="table-pagination-btn"
+            (click)="setTablePage('monthly', monthlyInfo.currentPage + 1)"
+            [disabled]="monthlyInfo.currentPage >= monthlyInfo.totalPages"
+            aria-label="Próxima página"
+          >
+            Próxima
+          </button>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="pdv-monthly-charts">
+    <div class="pdv-card pdv-chart-card">
+      <h3 class="pdv-panel-subtitle">
+        Vendas por dia e forma de pagamento (mês atual)
+      </h3>
+      <div class="pdv-chart-wrap">
+        <canvas
+          baseChart
+          [data]="monthlyDailyPaymentChartData()"
+          [options]="monthlyDailyPaymentChartOptions"
+          [type]="'bar'"
+        >
+        </canvas>
+      </div>
+    </div>
+
+    <div class="pdv-card pdv-chart-card">
+      <h3 class="pdv-panel-subtitle">
+        Progressão do valor bruto por dia (mês atual)
+      </h3>
+      <div class="pdv-chart-wrap">
+        <canvas
+          baseChart
+          [data]="monthlyDailyGrossChartData()"
+          [options]="monthlyDailyGrossChartOptions"
+          [type]="'line'"
+        >
+        </canvas>
+      </div>
+    </div>
+
+    <div class="pdv-card pdv-chart-card pdv-top-items-card">
+      <h3 class="pdv-panel-subtitle">Top 15 itens do mês</h3>
+      <ol class="pdv-top-items-list">
+        @for (item of topMonthlyItems(); track item.name; let i = $index) {
+          <li class="pdv-top-items-row">
+            <span class="pdv-top-items-rank">{{ i + 1 }}</span>
+            <span class="pdv-top-items-name">{{ item.name }}</span>
+            <span class="pdv-top-items-qty">{{ item.qty }}x</span>
+            <span class="pdv-top-items-total">
+              {{ pdv.money(item.total) }}
+            </span>
+          </li>
+        } @empty {
+          <li class="pdv-top-items-empty">
+            Nenhuma venda registrada neste mês.
+          </li>
+        }
+      </ol>
+    </div>
+  </div>
+</div>
+

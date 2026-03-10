@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { StorageService } from './storage.service';
 
 const LS_KEY = 'itemsCatalog.v1';

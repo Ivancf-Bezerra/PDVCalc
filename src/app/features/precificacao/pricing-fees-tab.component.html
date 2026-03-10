@@ -1,0 +1,77 @@
+<div class="card block">
+  <div class="split section-head">
+    <div><div class="section-title">Taxas percentuais</div><div class="hint">Ex.: cartão, iFood, imposto.</div></div>
+    <button type="button" class="btn btn-primary" (click)="pricing.addFeePct()" title="Adicionar" aria-label="Adicionar"><lucide-angular name="plus" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular> Adicionar</button>
+  </div>
+  <div class="table-wrap table-scroll-wrap table-scroll-layout" [class.table-min-5-rows]="paginatedLength(pricing.fees().pct, 'fee-pct') < 5">
+    <div class="table-scroll-header"><table class="table-scroll-sync"><thead><tr><th>Nome</th><th>Percentual (%)</th><th></th></tr></thead></table></div>
+    <div class="table-scroll-body">
+      <table class="table-scroll-sync">
+        <tbody>
+          @for (it of paginate(pricing.fees().pct, 'fee-pct'); track it.id) {
+            <tr>
+              <td><input type="text" [value]="it.name" (input)="updateFeePctName(it, $event)" placeholder="Ex: Cartão"></td>
+              <td><input type="number" [value]="it.pct" (input)="updateFeePctValue(it, $event)" min="0" step="0.01"></td>
+              <td style="text-align:right;"><button type="button" class="btn btn-danger btn-icon-only" (click)="pricing.removeFeePct(it.id)" title="Remover" aria-label="Remover"><lucide-angular name="trash-2" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular></button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+  @let feePctItems = pricing.fees().pct;
+  @let feePctInfo = paginationInfo(feePctItems, 'fee-pct');
+  <div class="table-pagination">
+    <span class="table-pagination-size">Exibir <select class="table-pagination-select" [ngModel]="getTablePageSize('fee-pct')" (ngModelChange)="onPageSizeChange('fee-pct', $event)">@for (opt of pageSizeOptions; track opt) {<option [value]="opt">{{ opt }}</option>}</select> itens</span>
+    <span class="table-pagination-range">{{ feePctInfo.start }}-{{ feePctInfo.end }} de {{ feePctInfo.total }}</span>
+    @if (feePctInfo.totalPages > 1) {
+      <div class="table-pagination-nav">
+        <button type="button" class="table-pagination-btn" (click)="setTablePage('fee-pct', feePctInfo.currentPage - 1)" [disabled]="feePctInfo.currentPage <= 1" aria-label="Página anterior">Anterior</button>
+        <span class="table-pagination-page">Página {{ feePctInfo.currentPage }} de {{ feePctInfo.totalPages }}</span>
+        <button type="button" class="table-pagination-btn" (click)="setTablePage('fee-pct', feePctInfo.currentPage + 1)" [disabled]="feePctInfo.currentPage >= feePctInfo.totalPages" aria-label="Próxima página">Próxima</button>
+      </div>
+    }
+  </div>
+</div>
+<div class="card block">
+  <div class="split section-head">
+    <div><div class="section-title">Custos variáveis fixos (por unidade)</div><div class="hint">R$ por unidade: etiqueta, saco.</div></div>
+    <button type="button" class="btn btn-primary" (click)="pricing.addVarFixed()" title="Adicionar" aria-label="Adicionar"><lucide-angular name="plus" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular> Adicionar</button>
+  </div>
+  <div class="table-wrap table-scroll-wrap table-scroll-layout" [class.table-min-5-rows]="paginatedLength(pricing.fees().fixedPerUnit, 'fee-fixed') < 5">
+    <div class="table-scroll-header"><table class="table-scroll-sync"><thead><tr><th>Nome</th><th>Valor (R$ por unidade)</th><th></th></tr></thead></table></div>
+    <div class="table-scroll-body">
+      <table class="table-scroll-sync">
+        <tbody>
+          @for (it of paginate(pricing.fees().fixedPerUnit, 'fee-fixed'); track it.id) {
+            <tr>
+              <td><input type="text" [value]="it.name" (input)="updateVarFixedName(it, $event)" placeholder="Ex: Etiqueta"></td>
+              <td><input type="number" [value]="it.value" (input)="updateVarFixedValue(it, $event)" min="0" step="0.01"></td>
+              <td style="text-align:right;"><button type="button" class="btn btn-danger btn-icon-only" (click)="pricing.removeVarFixed(it.id)" title="Remover" aria-label="Remover"><lucide-angular name="trash-2" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular></button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+  @let feeFixedItems = pricing.fees().fixedPerUnit;
+  @let feeFixedInfo = paginationInfo(feeFixedItems, 'fee-fixed');
+  <div class="table-pagination">
+    <span class="table-pagination-size">Exibir <select class="table-pagination-select" [ngModel]="getTablePageSize('fee-fixed')" (ngModelChange)="onPageSizeChange('fee-fixed', $event)">@for (opt of pageSizeOptions; track opt) {<option [value]="opt">{{ opt }}</option>}</select> itens</span>
+    <span class="table-pagination-range">{{ feeFixedInfo.start }}-{{ feeFixedInfo.end }} de {{ feeFixedInfo.total }}</span>
+    @if (feeFixedInfo.totalPages > 1) {
+      <div class="table-pagination-nav">
+        <button type="button" class="table-pagination-btn" (click)="setTablePage('fee-fixed', feeFixedInfo.currentPage - 1)" [disabled]="feeFixedInfo.currentPage <= 1" aria-label="Página anterior">Anterior</button>
+        <span class="table-pagination-page">Página {{ feeFixedInfo.currentPage }} de {{ feeFixedInfo.totalPages }}</span>
+        <button type="button" class="table-pagination-btn" (click)="setTablePage('fee-fixed', feeFixedInfo.currentPage + 1)" [disabled]="feeFixedInfo.currentPage >= feeFixedInfo.totalPages" aria-label="Próxima página">Próxima</button>
+      </div>
+    }
+  </div>
+</div>
+<div class="card block">
+  <div class="section-title">Resumo</div>
+  <div class="results">
+    <div class="result"><h3>Total taxas percentuais</h3><div class="value primary">{{ pricing.pct(pricing.feesPctTotal()) }}</div></div>
+    <div class="result"><h3>Total variáveis / unidade</h3><div class="value danger">{{ pricing.money(pricing.varFixedTotal()) }}</div></div>
+  </div>
+</div>

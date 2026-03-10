@@ -56,7 +56,7 @@ export class PdvCartService {
 
   addItem(product: CatalogItem, quantity: number = 1, note?: string): void {
     const price = this.catalogService.effectivePrice(product);
-    const existing = this.linesSignal().find((l) => l.productId === product.id && l.note === (note ?? ''));
+    const existing = this.linesSignal().find((l) => l.productId === product.id && (l.note ?? '') === (note ?? ''));
     if (existing) {
       this.updateQty(existing.id, quantity);
       return;

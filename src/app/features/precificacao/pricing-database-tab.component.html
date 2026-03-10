@@ -1,0 +1,72 @@
+<div class="card block">
+  <div class="split section-head">
+    <div><div class="section-title">Ingredientes predefinidos</div><div class="hint">Disponíveis ao adicionar na receita.</div></div>
+    <button type="button" class="btn btn-primary" (click)="pricing.addDbIngredient()" title="Adicionar" aria-label="Adicionar"><lucide-angular name="plus" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular> Adicionar</button>
+  </div>
+  <div class="table-wrap table-scroll-wrap table-scroll-layout" [class.table-min-5-rows]="paginatedLength(pricing.database().ingredients, 'db-ingredients') < 5">
+    <div class="table-scroll-header"><table class="table-scroll-sync"><thead><tr><th>Item</th><th>Preço (R$)</th><th>Qtd Total</th><th></th></tr></thead></table></div>
+    <div class="table-scroll-body">
+      <table class="table-scroll-sync">
+        <tbody>
+          @for (it of paginate(pricing.database().ingredients, 'db-ingredients'); track it.id) {
+            <tr>
+              <td><input type="text" [value]="it.name" (input)="updateDbIngredientName(it, $event)" placeholder="Ex: Farinha"></td>
+              <td><input type="number" [value]="it.pricePaid" (input)="updateDbIngredientPrice(it, $event)" min="0" step="0.01"></td>
+              <td><input type="number" [value]="it.qtdTotal" (input)="updateDbIngredientQtd(it, $event)" min="0" step="0.01"></td>
+              <td style="text-align:right;"><button type="button" class="btn btn-danger btn-icon-only" (click)="pricing.removeDbIngredient(it.id)" title="Remover" aria-label="Remover"><lucide-angular name="trash-2" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular></button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+  @let dbIngItems = pricing.database().ingredients;
+  @let dbIngInfo = paginationInfo(dbIngItems, 'db-ingredients');
+  <div class="table-pagination">
+    <span class="table-pagination-size">Exibir <select class="table-pagination-select" [ngModel]="getTablePageSize('db-ingredients')" (ngModelChange)="onPageSizeChange('db-ingredients', $event)">@for (opt of pageSizeOptions; track opt) {<option [value]="opt">{{ opt }}</option>}</select> itens</span>
+    <span class="table-pagination-range">{{ dbIngInfo.start }}-{{ dbIngInfo.end }} de {{ dbIngInfo.total }}</span>
+    @if (dbIngInfo.totalPages > 1) {
+      <div class="table-pagination-nav">
+        <button type="button" class="table-pagination-btn" (click)="setTablePage('db-ingredients', dbIngInfo.currentPage - 1)" [disabled]="dbIngInfo.currentPage <= 1" aria-label="Página anterior">Anterior</button>
+        <span class="table-pagination-page">Página {{ dbIngInfo.currentPage }} de {{ dbIngInfo.totalPages }}</span>
+        <button type="button" class="table-pagination-btn" (click)="setTablePage('db-ingredients', dbIngInfo.currentPage + 1)" [disabled]="dbIngInfo.currentPage >= dbIngInfo.totalPages" aria-label="Próxima página">Próxima</button>
+      </div>
+    }
+  </div>
+</div>
+<div class="card block">
+  <div class="split section-head">
+    <div><div class="section-title">Embalagens predefinidas</div><div class="hint">Disponíveis ao adicionar na receita.</div></div>
+    <button type="button" class="btn btn-primary" (click)="pricing.addDbPackaging()" title="Adicionar" aria-label="Adicionar"><lucide-angular name="plus" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular> Adicionar</button>
+  </div>
+  <div class="table-wrap table-scroll-wrap table-scroll-layout" [class.table-min-5-rows]="paginatedLength(pricing.database().packaging, 'db-packaging') < 5">
+    <div class="table-scroll-header"><table class="table-scroll-sync"><thead><tr><th>Item</th><th>Preço (R$)</th><th>Qtd Total</th><th></th></tr></thead></table></div>
+    <div class="table-scroll-body">
+      <table class="table-scroll-sync">
+        <tbody>
+          @for (it of paginate(pricing.database().packaging, 'db-packaging'); track it.id) {
+            <tr>
+              <td><input type="text" [value]="it.name" (input)="updateDbPackagingName(it, $event)" placeholder="Ex: Forminha"></td>
+              <td><input type="number" [value]="it.pricePaid" (input)="updateDbPackagingPrice(it, $event)" min="0" step="0.01"></td>
+              <td><input type="number" [value]="it.qtdTotal" (input)="updateDbPackagingQtd(it, $event)" min="0" step="0.01"></td>
+              <td style="text-align:right;"><button type="button" class="btn btn-danger btn-icon-only" (click)="pricing.removeDbPackaging(it.id)" title="Remover" aria-label="Remover"><lucide-angular name="trash-2" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular></button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+  @let dbPackItems = pricing.database().packaging;
+  @let dbPackInfo = paginationInfo(dbPackItems, 'db-packaging');
+  <div class="table-pagination">
+    <span class="table-pagination-size">Exibir <select class="table-pagination-select" [ngModel]="getTablePageSize('db-packaging')" (ngModelChange)="onPageSizeChange('db-packaging', $event)">@for (opt of pageSizeOptions; track opt) {<option [value]="opt">{{ opt }}</option>}</select> itens</span>
+    <span class="table-pagination-range">{{ dbPackInfo.start }}-{{ dbPackInfo.end }} de {{ dbPackInfo.total }}</span>
+    @if (dbPackInfo.totalPages > 1) {
+      <div class="table-pagination-nav">
+        <button type="button" class="table-pagination-btn" (click)="setTablePage('db-packaging', dbPackInfo.currentPage - 1)" [disabled]="dbPackInfo.currentPage <= 1" aria-label="Página anterior">Anterior</button>
+        <span class="table-pagination-page">Página {{ dbPackInfo.currentPage }} de {{ dbPackInfo.totalPages }}</span>
+        <button type="button" class="table-pagination-btn" (click)="setTablePage('db-packaging', dbPackInfo.currentPage + 1)" [disabled]="dbPackInfo.currentPage >= dbPackInfo.totalPages" aria-label="Próxima página">Próxima</button>
+      </div>
+    }
+  </div>
+</div>

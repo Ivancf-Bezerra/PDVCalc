@@ -1,0 +1,67 @@
+<ng-template #helpIcon>
+  <lucide-angular name="help-circle" class="icon-help" [size]="14" aria-hidden="true"></lucide-angular>
+</ng-template>
+
+<div class="card block">
+  <div class="section-title">Configuração geral</div>
+  <div class="grid">
+    <div class="col-4">
+      <div class="label-row"><label for="monthlyHours">Meta mensal de horas produtivas</label><button type="button" class="help-icon" aria-label="Ajuda" (click)="showHelp($event)" data-help="Horas por mês para rateio." title="Ajuda"><ng-container *ngTemplateOutlet="helpIcon"></ng-container></button></div>
+      <input type="number" id="monthlyHours" min="1" [ngModel]="pricing.fixed().monthlyHours" (ngModelChange)="updateFixedMonthlyHours($event)">
+    </div>
+    <div class="col-4">
+      <div class="label-row"><label for="workDaysPerMonth">Dias úteis no mês</label><button type="button" class="help-icon" aria-label="Ajuda" (click)="showHelp($event)" data-help="Dias trabalhados no mês." title="Ajuda"><ng-container *ngTemplateOutlet="helpIcon"></ng-container></button></div>
+      <input type="number" id="workDaysPerMonth" min="1" max="31" [ngModel]="pricing.fixed().workDaysPerMonth" (ngModelChange)="updateFixedWorkDays($event)">
+    </div>
+    <div class="col-4">
+      <div class="label-row"><label for="laborHourly">Valor da hora (mão de obra)</label><button type="button" class="help-icon" aria-label="Ajuda" (click)="showHelp($event)" data-help="Custo por hora de trabalho." title="Ajuda"><ng-container *ngTemplateOutlet="helpIcon"></ng-container></button></div>
+      <input type="number" id="laborHourly" min="0" step="0.01" [ngModel]="pricing.fixed().laborHourly" (ngModelChange)="updateFixedLaborHourly($event)">
+    </div>
+    <div class="col-12"><div class="hint"><strong>Total mão de obra (mensal):</strong> <span class="mono">{{ pricing.money(pricing.fixed().monthlyHours * pricing.fixed().laborHourly) }}</span></div></div>
+  </div>
+  <div class="explain-box"><strong>Rateio:</strong> custo por hora = total ÷ meta de horas. Por receita: (custo/h × tempo em h) ÷ unidades.</div>
+  <div class="row-actions"><button type="button" class="btn btn-success btn-icon-only" (click)="saveFixedSettings()" title="Salvar" aria-label="Salvar"><lucide-angular name="save" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular></button></div>
+</div>
+<div class="card block">
+  <div class="split section-head">
+    <div><div class="section-title">Lista de custos fixos</div><div class="hint">Ex.: aluguel, luz, gás.</div></div>
+    <button type="button" class="btn btn-primary" (click)="pricing.addFixedItem()" title="Adicionar" aria-label="Adicionar"><lucide-angular name="plus" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular> Adicionar</button>
+  </div>
+  <div class="table-wrap table-scroll-wrap table-scroll-layout" [class.table-min-5-rows]="paginatedLength(pricing.fixed().items, 'fixed') < 5">
+    <div class="table-scroll-header"><table class="table-scroll-sync"><thead><tr><th>Nome</th><th>Valor mensal (R$)</th><th></th></tr></thead></table></div>
+    <div class="table-scroll-body">
+      <table class="table-scroll-sync">
+        <tbody>
+          @for (it of paginate(pricing.fixed().items, 'fixed'); track it.id) {
+            <tr>
+              <td><input type="text" [value]="it.name" (input)="updateFixedItemName(it, $event)" placeholder="Ex: Aluguel"></td>
+              <td><input type="number" [value]="it.value" (input)="updateFixedItemValue(it, $event)" min="0" step="0.01"></td>
+              <td style="text-align:right;"><button type="button" class="btn btn-danger btn-icon-only" (click)="pricing.removeFixedItem(it.id)" title="Remover" aria-label="Remover"><lucide-angular name="trash-2" class="icon-action" [size]="18" aria-hidden="true"></lucide-angular></button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+  @let fixedItems = pricing.fixed().items;
+  @let fixedInfo = paginationInfo(fixedItems, 'fixed');
+  <div class="table-pagination">
+    <span class="table-pagination-size">Exibir <select class="table-pagination-select" [ngModel]="getTablePageSize('fixed')" (ngModelChange)="onPageSizeChange('fixed', $event)">@for (opt of pageSizeOptions; track opt) {<option [value]="opt">{{ opt }}</option>}</select> itens</span>
+    <span class="table-pagination-range">{{ fixedInfo.start }}-{{ fixedInfo.end }} de {{ fixedInfo.total }}</span>
+    @if (fixedInfo.totalPages > 1) {
+      <div class="table-pagination-nav">
+        <button type="button" class="table-pagination-btn" (click)="setTablePage('fixed', fixedInfo.currentPage - 1)" [disabled]="fixedInfo.currentPage <= 1" aria-label="Página anterior">Anterior</button>
+        <span class="table-pagination-page">Página {{ fixedInfo.currentPage }} de {{ fixedInfo.totalPages }}</span>
+        <button type="button" class="table-pagination-btn" (click)="setTablePage('fixed', fixedInfo.currentPage + 1)" [disabled]="fixedInfo.currentPage >= fixedInfo.totalPages" aria-label="Próxima página">Próxima</button>
+      </div>
+    }
+  </div>
+</div>
+<div class="card block">
+  <div class="section-title">Resumo</div>
+  <div class="results">
+    <div class="result"><h3>Total custos fixos / mês</h3><div class="value danger">{{ pricing.money(pricing.fixedMonthlyTotal()) }}</div></div>
+    <div class="result"><h3>Rateio fixo por hora</h3><div class="value">{{ pricing.money(pricing.fixedPerHour()) }}</div></div>
+    <div class="result"><h3>Rateio por {{ unitLabel() }} (receita atual)</h3><div class="value">{{ pricing.money(pricing.selectedRecipe() ? pricing.fixedPerUnitForRecipe(pricing.selectedRecipe()!) : 0) }}</div></div>
+  </div>
+</div>

@@ -1,0 +1,38 @@
+<h2 class="pricing-title">Precificação (markup)</h2>
+<p class="sub">Formação do preço sugerido: despesas variáveis, margem e markup.</p>
+<div class="card pricing-card">
+  <div class="pricing-card-header">
+    <div class="pricing-card-label">Preço sugerido por {{ unitLabel() }}</div>
+    <div class="pricing-card-value">{{ pricing.money(pricingResult().suggestedPrice) }}</div>
+  </div>
+  <div class="pricing-card-body">
+    <div class="grid">
+      <div class="col-6">
+        <label for="pricingMode">Modo de cálculo</label>
+        <select id="pricingMode" [ngModel]="pricing.pricing().mode" (ngModelChange)="updatePricingMode($event)">
+          <option value="byMargin">Preço por margem líquida desejada</option>
+          <option value="byMarket">Analisar margem a partir do preço de mercado</option>
+        </select>
+      </div>
+      <div class="col-3" [style.display]="pricing.pricing().mode === 'byMarket' ? 'none' : ''">
+        <label for="desiredMargin">Margem líquida desejada (ML %)</label>
+        <input type="number" id="desiredMargin" min="0" max="95" step="0.1" [ngModel]="pricing.pricing().desiredMargin" (ngModelChange)="updateDesiredMargin($event)">
+      </div>
+      <div class="col-3" [style.display]="pricing.pricing().mode === 'byMarket' ? '' : 'none'">
+        <label for="marketPrice">Preço de mercado (R$)</label>
+        <input type="number" id="marketPrice" min="0" step="0.01" [ngModel]="pricing.pricing().marketPrice" (ngModelChange)="updateMarketPrice($event)">
+      </div>
+    </div>
+  </div>
+</div>
+<div class="pricing-resumo-wrap">
+  <div class="section-title">Resumo (modelo Sebrae)</div>
+  <div class="grid pricing-resumo-grid">
+    <div class="col-4"><div class="card card-explicativo"><div class="card-explicativo-title">1. Despesas variáveis (DV)</div><p class="card-explicativo-texto">Taxas sobre a venda.</p><div class="card-explicativo-conta pricing-resumo-conta">{{ pricing.pct(pricing.feesPctTotal()) }}</div></div></div>
+    <div class="col-4"><div class="card card-explicativo"><div class="card-explicativo-title">2. Margem líquida</div><p class="card-explicativo-texto">Lucro sobre o preço.</p><div class="card-explicativo-conta pricing-resumo-conta">{{ pricing.fx(pricing.pricing().mode === 'byMarket' ? pricingResult().realMargin : pricing.pricing().desiredMargin) }}%</div></div></div>
+    <div class="col-4"><div class="card card-explicativo"><div class="card-explicativo-title">3. Markup (M)</div><p class="card-explicativo-texto">M = 100 / [100 - (DV + ML)].</p><div class="card-explicativo-conta pricing-resumo-conta pricing-resumo-highlight">{{ pricing.fx(pricingResult().markup) }}x</div></div></div>
+    <div class="col-4"><div class="card card-explicativo"><div class="card-explicativo-title">4. Custo unitário</div><p class="card-explicativo-texto">CMV + embalagem + mão de obra + rateio.</p><div class="card-explicativo-conta pricing-resumo-conta">{{ pricing.money(pricingResult().unitCost) }}</div></div></div>
+    <div class="col-4"><div class="card card-explicativo"><div class="card-explicativo-title">5. Preço sugerido</div><p class="card-explicativo-texto">Custo × M ou preço informado.</p><div class="card-explicativo-conta pricing-resumo-conta">{{ pricingResumoPreco() }}</div></div></div>
+    <div class="col-4"><div class="card card-explicativo"><div class="card-explicativo-title">6. Lucro líquido por {{ unitLabel() }}</div><p class="card-explicativo-texto">Após taxas menos custo.</p><div class="card-explicativo-conta pricing-resumo-conta">{{ pricing.money(pricingResult().netProfitUnit) }}</div></div></div>
+  </div>
+</div>
