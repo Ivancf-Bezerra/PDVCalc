@@ -104,9 +104,7 @@ describe('ItemsCatalogService', () => {
   it('deve localizar produto por código de barras', () => {
     service.syncFromRecipe({ recipeId: 'r1', name: 'Brigadeiro', cmv: 1, feesPct: 0, suggestedPrice: 5 });
     const id = service.items()[0].id;
-    service.setUseManualPrice(id, false);
-    const item = service.items()[0];
-    service['itemsSignal'].update((arr) => arr.map((i) => i.id === id ? { ...i, barcode: '1234567890' } : i));
+    service.setBarcode(id, '1234567890');
     const found = service.findByBarcode('1234567890');
     expect(found).not.toBeNull();
     expect(found?.name).toBe('Brigadeiro');
@@ -114,5 +112,58 @@ describe('ItemsCatalogService', () => {
 
   it('deve retornar null para código de barras não encontrado', () => {
     expect(service.findByBarcode('9999')).toBeNull();
+  });
+
+  // --- setCategory ---
+
+  it('deve alterar categoria do item', () => {
+    service.syncFromRecipe({ recipeId: 'r1', name: 'Brigadeiro', cmv: 1, feesPct: 0, suggestedPrice: 5 });
+    const id = service.items()[0].id;
+    expect(service.items()[0].categoryId).toBe('outros');
+    service.setCategory(id, 'doces');
+    expect(service.items()[0].categoryId).toBe('doces');
+    service.setCategory(id, null);
+    expect(service.items()[0].categoryId).toBeUndefined();
+  });
+
+  // --- setBarcode ---
+
+  it('deve alterar código de barras do item', () => {
+    service.syncFromRecipe({ recipeId: 'r1', name: 'Brigadeiro', cmv: 1, feesPct: 0, suggestedPrice: 5 });
+    const id = service.items()[0].id;
+    service.setBarcode(id, ' 789012 ');
+    expect(service.items()[0].barcode).toBe('789012');
+    service.setBarcode(id, '');
+    expect(service.items()[0].barcode).toBeNull();
+  });
+
+  // --- addSupplierItem ---
+
+  it('deve adicionar produto de fornecedor (sem receita)', () => {
+    const added = service.addSupplierItem({
+      name: 'Refrigerante 350ml',
+      categoryId: 'bebidas-geladas',
+      barcode: '789123',
+      price: 5.5,
+    });
+    expect(added).not.toBeNull();
+    expect(service.items().length).toBe(1);
+    expect(service.items()[0].name).toBe('Refrigerante 350ml');
+    expect(service.items()[0].recipeId).toBeNull();
+    expect(service.items()[0].categoryId).toBe('bebidas-geladas');
+    expect(service.items()[0].barcode).toBe('789123');
+    expect(service.items()[0].useManualPrice).toBe(true);
+    expect(service.items()[0].manualPrice).toBe(5.5);
+    expect(service.effectivePrice(service.items()[0])).toBe(5.5);
+  });
+
+  it('não deve adicionar produto de fornecedor com nome vazio', () => {
+    const added = service.addSupplierItem({
+      name: '   ',
+      categoryId: 'outros',
+      price: 10,
+    });
+    expect(added).toBeNull();
+    expect(service.items().length).toBe(0);
   });
 });

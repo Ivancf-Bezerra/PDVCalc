@@ -128,6 +128,48 @@ export class ItemsCatalogService {
     this.persist();
   }
 
+  setCategory(id: string, categoryId: PdvCategoryId | null): void {
+    this.itemsSignal.update((arr) =>
+      arr.map((i) => (i.id === id ? { ...i, categoryId: categoryId ?? undefined } : i))
+    );
+    this.persist();
+  }
+
+  setBarcode(id: string, barcode: string | null): void {
+    const value = (barcode ?? '').trim() || null;
+    this.itemsSignal.update((arr) =>
+      arr.map((i) => (i.id === id ? { ...i, barcode: value } : i))
+    );
+    this.persist();
+  }
+
+  /** Adiciona produto de fornecedor (sem receita): nome, categoria, código de barras opcional e preço de venda. */
+  addSupplierItem(data: {
+    name: string;
+    categoryId: PdvCategoryId;
+    barcode?: string | null;
+    price: number;
+  }): CatalogItem | null {
+    const name = (data.name ?? '').trim();
+    if (!name) return null;
+    const price = Math.max(0, Number(data.price) || 0);
+    const item: CatalogItem = {
+      id: uid(),
+      name,
+      recipeId: null,
+      cmv: 0,
+      feesPct: 0,
+      suggestedPrice: 0,
+      useManualPrice: true,
+      manualPrice: price,
+      categoryId: data.categoryId ?? 'outros',
+      barcode: (data.barcode ?? '').trim() || null,
+    };
+    this.itemsSignal.update((arr) => [...arr, item]);
+    this.persist();
+    return item;
+  }
+
   removeItem(id: string): void {
     this.itemsSignal.update((arr) => arr.filter((i) => i.id !== id));
     this.persist();

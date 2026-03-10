@@ -1,6 +1,6 @@
 # Doces - Precificação e PDV
 
-Aplicação Angular com **Calculadora de Precificação** (receitas, custos, taxas, markup) e **PDV / Relatório diário de vendas**. Dados salvos localmente no navegador.
+Aplicação Angular com **login multi-usuário**, **Calculadora de Precificação** (receitas, custos, taxas, markup) e **PDV / Relatório de vendas**. Dados salvos localmente no navegador, isolados por usuário.
 
 ## Início rápido
 
@@ -9,7 +9,7 @@ npm install
 npm start
 ```
 
-Acesse `http://localhost:4200/`. A rota padrão é a calculadora de precificação (`/precificacao`). Use o menu para alternar para **PDV** (`/pdv`).
+Acesse `http://localhost:4200/`. Se não houver usuário logado, a aplicação exibe a tela de **Login**; após entrar, a rota padrão é o **PDV** (`/pdv`). Use o menu lateral para alternar entre **PDV** e **Calculadora** (`/precificacao`).
 
 ## Comandos
 
@@ -23,7 +23,7 @@ Acesse `http://localhost:4200/`. A rota padrão é a calculadora de precificaç�
 
 Toda a documentação de **regras, utilização e desenvolvimento** do projeto está na pasta **`docs/`**:
 
-- **[docs/DESENVOLVIMENTO.md](docs/DESENVOLVIMENTO.md)** — Regras, convenções, estrutura do projeto, como usar a aplicação e como desenvolver (novas features, estado, estilização, testes).
+- **[docs/DESENVOLVIMENTO.md](docs/DESENVOLVIMENTO.md)** — Regras, convenções, estrutura do projeto, autenticação, como usar a aplicação e como desenvolver (novas features, estado, estilização, testes).
 
 Novos arquivos `.md` para gerenciamento de regras e desenvolvimento devem ser criados em **`docs/`**.
 
