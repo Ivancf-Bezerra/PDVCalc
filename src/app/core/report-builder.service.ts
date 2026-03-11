@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import type { CartLineItem } from './pdv-cart.service';
+import type { CartLineItem, PaymentMethod } from './pdv-cart.service';
 import type { Recipe } from './pricing-state.service';
 import { PricingStateService } from './pricing-state.service';
 
@@ -9,6 +9,8 @@ export interface OrderSnapshotForPrintLike {
   discount: number;
   total: number;
   orderNumber: number;
+  payments?: Array<{ method: PaymentMethod | string; amount: number }>;
+  dinheiroReceived?: number | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -18,6 +20,32 @@ export class ReportBuilderService {
     money: (v: number) => string,
     now: () => string = () => new Date().toLocaleString('pt-BR'),
   ): string {
+    const PAYMENT_LABELS: Record<string, string> = {
+      dinheiro: 'Dinheiro',
+      debito: 'Débito',
+      credito: 'Crédito',
+      pix: 'PIX',
+      outros: 'Outros',
+    };
+
+    const payments = data.payments ?? [];
+    const pagamentoLines: string[] = [];
+    let dinheiroTotal = 0;
+    if (payments.length > 0) {
+      pagamentoLines.push('---');
+      pagamentoLines.push('Pagamentos:');
+      for (const p of payments) {
+        const label = PAYMENT_LABELS[p.method] ?? p.method;
+        pagamentoLines.push(`- ${label}: ${money(p.amount)}`);
+        if (p.method === 'dinheiro') dinheiroTotal += p.amount;
+      }
+      if (dinheiroTotal > 0 && data.dinheiroReceived != null) {
+        const troco = data.dinheiroReceived - dinheiroTotal;
+        pagamentoLines.push(`Recebido em dinheiro: ${money(data.dinheiroReceived)}`);
+        if (troco > 0) pagamentoLines.push(`Troco: ${money(troco)}`);
+      }
+    }
+
     return [
       `Pedido #${data.orderNumber}`,
       now(),
@@ -32,6 +60,7 @@ export class ReportBuilderService {
       `Subtotal: ${money(data.subtotal)}`,
       `Desconto: ${money(data.discount)}`,
       `Total: ${money(data.total)}`,
+      ...pagamentoLines,
     ].join('\n');
   }
 

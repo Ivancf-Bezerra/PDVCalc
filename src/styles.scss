@@ -1749,6 +1749,9 @@ $select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
   z-index: 1001;
   animation: pdv-modal-in 0.15s ease-out;
 }
+.pdv-modal.pdv-modal-payment {
+  max-width: 540px;
+}
 @keyframes pdv-modal-in {
   from { opacity: 0; transform: translate(-50%, -48%); }
   to   { opacity: 1; transform: translate(-50%, -50%); }
@@ -1859,6 +1862,149 @@ $select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
 .pdv-payment-card-label {
   text-align: center;
   line-height: 1.2;
+}
+/* --- Modal de pagamento: cards de método --- */
+.pdv-payment-card--small {
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.65rem;
+}
+.pdv-payment-card--small .pdv-payment-card-icon { margin-bottom: 0; }
+
+/* --- Card de seleção de forma de pagamento --- */
+.pdv-payment-methods-card {
+  padding: var(--space-3);
+  border: 1px solid var(--hy-border);
+  border-radius: var(--hy-radius-lg);
+  background: var(--hy-bg-body);
+  margin-bottom: var(--space-3);
+}
+.pdv-payment-methods-card-title {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--hy-text-muted);
+  margin-bottom: var(--space-2);
+}
+.pdv-payment-method-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: var(--space-1);
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.pdv-payment-method-row .pdv-payment-card {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* --- Chips de pagamentos confirmados --- */
+.pdv-committed-payments {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+}
+.pdv-committed-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--hy-border);
+  border-radius: var(--hy-radius);
+  background: var(--hy-bg-card);
+  font-size: 0.8125rem;
+}
+.pdv-committed-chip-icon {
+  color: var(--hy-text-muted);
+  flex-shrink: 0;
+}
+.pdv-committed-chip-method {
+  flex: 1;
+  font-weight: 600;
+  color: var(--hy-text);
+}
+.pdv-committed-chip-amount {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--hy-success);
+}
+.pdv-committed-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--hy-radius);
+  background: transparent;
+  color: var(--hy-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+.pdv-committed-chip-remove:hover {
+  background: var(--hy-gray-soft);
+  color: var(--hy-danger);
+}
+
+/* --- Valor faltante (destaque vermelho) --- */
+.pdv-modal-restante {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--hy-radius);
+  border-left: 3px solid var(--hy-danger);
+  background: color-mix(in srgb, var(--hy-danger) 10%, transparent);
+  color: var(--hy-danger);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.pdv-modal-restante strong { font-weight: 800; }
+.pdv-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.pdv-modal-hint--error { color: var(--hy-danger); }
+.pdv-modal-actions--with-add {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+.pdv-btn-add-payment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: var(--space-2);
+  border: 2px dashed var(--hy-border);
+  border-radius: var(--hy-radius-lg);
+  background: transparent;
+  color: var(--hy-text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.pdv-btn-add-payment:hover {
+  border-color: var(--hy-primary);
+  color: var(--hy-primary);
+  background: color-mix(in srgb, var(--hy-primary) 6%, transparent);
+}
+.pdv-modal-actions-buttons {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
 }
 .pdv-qty-stepper {
   display: flex; align-items: center; gap: var(--space-2);

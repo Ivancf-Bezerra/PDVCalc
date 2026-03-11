@@ -238,6 +238,15 @@ export class PdvDailyReportComponent {
     return this.paymentMethodLabels[f];
   }
 
+  /** Exibe a forma de pagamento (única ou misto, ex.: "PIX + Dinheiro"). */
+  protected getOrderPaymentLabel(order: DailyOrder): string {
+    const split = order.paymentSplit;
+    if (split && split.length > 0) {
+      return split.map((p) => this.paymentMethodLabels[p.method]).join(' + ');
+    }
+    return this.paymentMethodLabels[order.paymentMethod];
+  }
+
   protected openCancelModal(orderId: string): void {
     this.saleToCancelId.set(orderId);
     this.cancelReason.set('');

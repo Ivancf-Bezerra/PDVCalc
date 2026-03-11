@@ -189,7 +189,7 @@
               </td>
               <td>
                 <span class="pdv-payment-badge">
-                  {{ paymentMethodLabels[order.paymentMethod] }}
+                  {{ getOrderPaymentLabel(order) }}
                 </span>
               </td>
               <td class="text-right">
@@ -381,7 +381,7 @@
           <span class="pdv-cancel-detail-label">Pagamento</span>
           <span class="pdv-cancel-detail-value">
             <span class="pdv-payment-badge">
-              {{ paymentMethodLabels[order.paymentMethod] }}
+              {{ getOrderPaymentLabel(order) }}
             </span>
           </span>
         </div>
@@ -475,7 +475,7 @@
         </div>
         <div class="pdv-order-detail-meta-item">
           <span class="pdv-payment-badge">
-            {{ paymentMethodLabels[order.paymentMethod] }}
+            {{ getOrderPaymentLabel(order) }}
           </span>
         </div>
       </div>

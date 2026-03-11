@@ -1,5 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { PdvStateService } from './pdv-state.service';
+import { PdvStateService, type PaymentSplitEntry } from './pdv-state.service';
 import { ItemsCatalogService, type CatalogItem } from './items-catalog.service';
 import { StorageService } from './storage.service';
 
@@ -141,8 +141,20 @@ export class PdvCartService {
     this.clearCart();
   }
 
+  /** Finaliza com uma única forma de pagamento (compatível). */
   finishOrder(
     paymentMethod: PaymentMethod,
+    amountReceived?: number
+  ): { success: boolean; change?: number; message?: string };
+
+  /** Finaliza com múltiplas formas de pagamento. */
+  finishOrder(
+    payments: Array<{ method: PaymentMethod; amount: number }>,
+    amountReceivedForDinheiro?: number
+  ): { success: boolean; change?: number; message?: string };
+
+  finishOrder(
+    methodOrPayments: PaymentMethod | Array<{ method: PaymentMethod; amount: number }>,
     amountReceived?: number
   ): { success: boolean; change?: number; message?: string } {
     const lines = this.linesSignal();
@@ -150,12 +162,22 @@ export class PdvCartService {
       return { success: false, message: 'Adicione itens ao pedido.' };
     }
     const total = this.total();
-    if (paymentMethod === 'dinheiro' && amountReceived != null) {
-      if (amountReceived < total) {
-        return { success: false, message: 'Valor recebido menor que o total.' };
+    const payments: Array<{ method: PaymentMethod; amount: number }> = Array.isArray(methodOrPayments)
+      ? methodOrPayments
+      : [{ method: methodOrPayments, amount: total }];
+    const sumPayments = payments.reduce((s, p) => s + p.amount, 0);
+    if (Math.abs(sumPayments - total) > 0.005) {
+      return { success: false, message: 'Soma dos pagamentos deve ser igual ao total.' };
+    }
+    const dinheiroTotal = payments.filter((p) => p.method === 'dinheiro').reduce((s, p) => s + p.amount, 0);
+    if (dinheiroTotal > 0 && amountReceived != null) {
+      if (amountReceived < dinheiroTotal) {
+        return { success: false, message: 'Valor recebido (dinheiro) menor que a parte em dinheiro.' };
       }
     }
     const orderNum = this.nextOrderNumber();
+    const firstMethod = payments[0].method;
+    const paymentSplit: PaymentSplitEntry[] = payments.map((p) => ({ method: p.method, amount: p.amount }));
     this.pdvState.addSales(
       lines.map((l) => {
         const isCustom = l.productId?.startsWith('custom:');
@@ -172,11 +194,12 @@ export class PdvCartService {
           itemNote,
         };
       }),
-      paymentMethod,
-      orderNum
+      firstMethod,
+      orderNum,
+      paymentSplit.length > 1 ? paymentSplit : null
     );
     this.storage.set(LS_LAST_ORDER, lines);
-    const change = paymentMethod === 'dinheiro' && amountReceived != null ? amountReceived - total : undefined;
+    const change = dinheiroTotal > 0 && amountReceived != null ? amountReceived - dinheiroTotal : undefined;
     this.clearCart();
     return { success: true, change };
   }

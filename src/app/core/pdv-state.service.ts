@@ -16,6 +16,11 @@ export const PAYMENT_METHOD_LABELS: Record<SalePaymentMethod, string> = {
 
 export type SaleStatus = 'active' | 'cancelled' | 'refunded';
 
+export interface PaymentSplitEntry {
+  method: SalePaymentMethod;
+  amount: number;
+}
+
 export interface SaleItem {
   id: string;
   description: string;
@@ -26,6 +31,8 @@ export interface SaleItem {
   productId?: string | null;
   itemNote?: string | null;
   paymentMethod?: SalePaymentMethod | null;
+  /** Quando a venda foi paga com mais de uma forma; preenchido no primeiro item do pedido. */
+  paymentSplit?: PaymentSplitEntry[] | null;
   cancelled?: boolean;
   cancelledAt?: string | null;
   cancelReason?: string | null;
@@ -40,6 +47,8 @@ export interface DailyOrder {
   orderNumber: number | null;
   createdAt: string;
   paymentMethod: SalePaymentMethod;
+  /** Formas de pagamento quando houve pagamento misto (primeiro item do pedido). */
+  paymentSplit?: PaymentSplitEntry[] | null;
   items: SaleItem[];
   totalItems: number;
   totalValue: number;
@@ -96,6 +105,7 @@ export class PdvStateService {
         orderNumber: first.orderNumber ?? null,
         createdAt: first.createdAt,
         paymentMethod: (first.paymentMethod ?? 'outros') as SalePaymentMethod,
+        paymentSplit: first.paymentSplit ?? null,
         items,
         totalItems: items.reduce((sum, i) => sum + i.quantity, 0),
         totalValue: items.reduce((sum, i) => sum + i.total, 0),
@@ -160,11 +170,12 @@ export class PdvStateService {
   addSales(
     items: Array<{ description: string; quantity: number; unitPrice: number; productId?: string | null; itemNote?: string | null }>,
     paymentMethod?: SalePaymentMethod | null,
-    orderNumber?: number | null
+    orderNumber?: number | null,
+    paymentSplit?: PaymentSplitEntry[] | null
   ): void {
     const oid = uid();
     const now = new Date().toISOString();
-    const toAdd: SaleItem[] = items.map((it) => ({
+    const toAdd: SaleItem[] = items.map((it, idx) => ({
       id: uid(),
       description: it.description || 'Venda',
       quantity: it.quantity,
@@ -174,6 +185,7 @@ export class PdvStateService {
       productId: it.productId ?? null,
       itemNote: it.itemNote ?? null,
       paymentMethod: paymentMethod ?? null,
+      paymentSplit: idx === 0 && paymentSplit && paymentSplit.length > 0 ? paymentSplit : null,
       orderId: oid,
       orderNumber: orderNumber ?? null,
     }));

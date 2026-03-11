@@ -281,53 +281,103 @@
         <div class="pdv-modal-backdrop" (click)="closePaymentModal()" role="presentation"></div>
         <div class="pdv-modal pdv-modal-payment" role="dialog" aria-labelledby="pdv-payment-title">
           <h2 id="pdv-payment-title" class="pdv-modal-title">Finalizar venda</h2>
+
+          <!-- Card: Total -->
           <div class="pdv-modal-total-card" aria-label="Total a pagar">
             <span class="pdv-modal-total-label">Total</span>
             <span class="pdv-modal-total-value">{{ cart.money(cart.total()) }}</span>
           </div>
-          <div class="pdv-modal-field">
-            <span class="pdv-modal-field-label">Forma de pagamento</span>
-            <div class="pdv-payment-cards" role="group" aria-label="Selecione a forma de pagamento">
-              @for (opt of paymentMethodOptions; track opt.id) {
+
+          <!-- Chips: pagamentos já confirmados -->
+          @if (committedPayments().length > 0) {
+            <div class="pdv-committed-payments" aria-label="Pagamentos confirmados">
+              @for (p of committedPayments(); track p.id) {
+                <div class="pdv-committed-chip">
+                  <lucide-angular
+                    [name]="getMethodIcon(p.method)"
+                    [size]="14"
+                    aria-hidden="true"
+                    class="pdv-committed-chip-icon"
+                  ></lucide-angular>
+                  <span class="pdv-committed-chip-method">{{ getMethodLabel(p.method) }}</span>
+                  <span class="pdv-committed-chip-amount">{{ cart.money(p.amount) }}</span>
+                  <button
+                    type="button"
+                    class="pdv-committed-chip-remove"
+                    (click)="removeCommittedPayment(p.id)"
+                    aria-label="Remover pagamento"
+                  >
+                    <lucide-angular name="x" [size]="12" aria-hidden="true"></lucide-angular>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Seletor: forma de pagamento ativa -->
+          <div class="pdv-payment-methods-card">
+            <span class="pdv-payment-methods-card-title">Forma de pagamento</span>
+            <div class="pdv-payment-method-row" role="group" aria-label="Selecionar forma de pagamento">
+              @for (opt of availableMethodOptions(); track opt.id) {
                 <button
                   type="button"
-                  class="pdv-payment-card"
-                  [class.pdv-payment-card--selected]="paymentMethod() === opt.id"
-                  (click)="paymentMethod.set(opt.id)"
-                  [attr.aria-pressed]="paymentMethod() === opt.id"
+                  class="pdv-payment-card pdv-payment-card--small"
+                  [class.pdv-payment-card--selected]="activeMethod() === opt.id"
+                  (click)="setActiveMethod(opt.id)"
+                  [attr.aria-pressed]="activeMethod() === opt.id"
                   [attr.aria-label]="opt.label"
                 >
-                  <lucide-angular [name]="opt.icon" [size]="24" aria-hidden="true" class="pdv-payment-card-icon"></lucide-angular>
+                  <lucide-angular [name]="opt.icon" [size]="18" aria-hidden="true" class="pdv-payment-card-icon"></lucide-angular>
                   <span class="pdv-payment-card-label">{{ opt.label }}</span>
                 </button>
               }
             </div>
           </div>
+
+          <!-- Valor faltante (em vermelho, acima do campo) -->
+          @if (valorFaltante() > 0) {
+            <div class="pdv-modal-restante" role="alert">
+              <lucide-angular name="alert-circle" [size]="16" aria-hidden="true"></lucide-angular>
+              <span>Faltam <strong>{{ cart.money(valorFaltante()) }}</strong></span>
+            </div>
+          }
+
+          <!-- Campo único de valor -->
           <div class="pdv-modal-field">
-            <label for="pdv-amount-received">Valor recebido (R$)</label>
+            <label for="pdv-payment-amount">
+              {{ activeMethod() === 'dinheiro' ? 'Valor recebido (R$)' : 'Valor (R$)' }}
+            </label>
             <input
               type="number"
-              id="pdv-amount-received"
+              id="pdv-payment-amount"
               min="0"
               step="0.01"
               placeholder="0,00"
-              [ngModel]="amountReceived()"
-              (ngModelChange)="setAmountReceived($event)"
-              [disabled]="paymentMethod() !== 'dinheiro'"
+              [ngModel]="paymentAmount()"
+              (ngModelChange)="setPaymentAmount($event)"
             >
           </div>
+
+          <!-- Troco (dinheiro) -->
           @let change = changeAmount();
-          <p class="pdv-modal-change" [class.pdv-modal-change--muted]="paymentMethod() !== 'dinheiro' || change == null || change < 0">
-            Troco: <strong>@if (paymentMethod() === 'dinheiro' && change != null && change >= 0) { {{ cart.money(change) }} } @else { — }</strong>
+          <p class="pdv-modal-change" [class.pdv-modal-change--muted]="change == null">
+            Troco:
+            <strong>
+              @if (change != null) { {{ cart.money(change) }} } @else { — }
+            </strong>
           </p>
+
           @if (paymentError()) {
             <p class="pdv-modal-error" role="alert">{{ paymentError() }}</p>
           }
+
           <div class="pdv-modal-actions">
-            <button type="button" class="pdv-order-btn pdv-order-btn-secondary" (click)="closePaymentModal()">Cancelar</button>
-            <button type="button" class="pdv-order-btn pdv-order-btn-primary" (click)="confirmPayment()">
-              Confirmar venda
-            </button>
+            <div class="pdv-modal-actions-buttons">
+              <button type="button" class="pdv-order-btn pdv-order-btn-secondary" (click)="closePaymentModal()">Cancelar</button>
+              <button type="button" class="pdv-order-btn pdv-order-btn-primary" (click)="confirmPayment()">
+                Confirmar venda
+              </button>
+            </div>
           </div>
         </div>
       }

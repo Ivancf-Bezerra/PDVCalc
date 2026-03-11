@@ -22,6 +22,10 @@ export interface OrderSnapshotForPrint {
   discount: number;
   total: number;
   orderNumber: number;
+  /** Formas de pagamento efetivas deste pedido. */
+  payments: Array<{ method: SalePaymentMethod; amount: number }>;
+  /** Valor recebido em dinheiro (quando houver). */
+  dinheiroReceived?: number | null;
 }
 
 const LS_CATEGORIES_ORDER = 'pdv.categoriesOrder.v1';
@@ -96,8 +100,15 @@ export class PdvComponent implements OnInit, OnDestroy {
   protected readonly codeInput = signal('');
   protected readonly showPaymentModal = signal(false);
   protected readonly showDiscountModal = signal(false);
-  protected readonly paymentMethod = signal<SalePaymentMethod>('dinheiro');
-  /** Opções de forma de pagamento para os cards do modal. */
+
+  /** Pagamentos parciais já confirmados (imutáveis, mostrados como chips). */
+  protected readonly committedPayments = signal<Array<{ id: string; method: SalePaymentMethod; amount: number }>>([]);
+  /** Método ativo na seleção atual. */
+  protected readonly activeMethod = signal<SalePaymentMethod>('dinheiro');
+  /** Único campo de valor — valor digitado para o método ativo. */
+  protected readonly paymentAmount = signal<number>(0);
+
+  /** Opções de forma de pagamento. */
   protected readonly paymentMethodOptions: Array<{ id: SalePaymentMethod; label: string; icon: string }> = [
     { id: 'dinheiro', label: PAYMENT_METHOD_LABELS.dinheiro, icon: 'dollar-sign' },
     { id: 'debito', label: PAYMENT_METHOD_LABELS.debito, icon: 'credit-card' },
@@ -105,13 +116,69 @@ export class PdvComponent implements OnInit, OnDestroy {
     { id: 'pix', label: PAYMENT_METHOD_LABELS.pix, icon: 'zap' },
     { id: 'outros', label: PAYMENT_METHOD_LABELS.outros, icon: 'tag' },
   ];
-  protected readonly amountReceived = signal<number>(0);
 
-  /** Define o valor recebido arredondado para no máximo 2 casas decimais. */
-  protected setAmountReceived(value: string | number | null | undefined): void {
+  /** Métodos ainda disponíveis (não usados em pagamentos confirmados). */
+  protected readonly availableMethodOptions = computed(() => {
+    const used = new Set(this.committedPayments().map((p) => p.method));
+    return this.paymentMethodOptions.filter((o) => !used.has(o.id));
+  });
+
+  /** Soma dos pagamentos já confirmados. */
+  protected readonly alreadyPaid = computed(() =>
+    this.committedPayments().reduce((s, p) => s + p.amount, 0)
+  );
+
+  /** Valor restante a pagar (total - já pago). */
+  protected readonly remaining = computed(() => {
+    const r = Math.round((this.cart.total() - this.alreadyPaid()) * 100) / 100;
+    return r > 0 ? r : 0;
+  });
+
+  /** Valor faltante considerando o que foi digitado: restante - campo atual (quando > 0). */
+  protected readonly valorFaltante = computed(() => {
+    const r = this.remaining();
+    const entered = Number(this.paymentAmount()) || 0;
+    const missing = Math.round((r - entered) * 100) / 100;
+    return missing > 0 ? missing : 0;
+  });
+
+  /** Troco: apenas para dinheiro quando digitado > restante. */
+  protected readonly changeAmount = computed(() => {
+    if (this.activeMethod() !== 'dinheiro') return null;
+    const entered = Number(this.paymentAmount()) || 0;
+    const r = this.remaining();
+    const troco = Math.round((entered - r) * 100) / 100;
+    return troco > 0 ? troco : null;
+  });
+
+  /** Define o valor digitado arredondado para 2 casas. */
+  protected setPaymentAmount(value: string | number | null | undefined): void {
     const n = value === null || value === undefined || value === '' ? 0 : Number(value);
     const rounded = Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : 0;
-    this.amountReceived.set(rounded);
+    this.paymentAmount.set(rounded);
+  }
+
+  protected setActiveMethod(method: SalePaymentMethod): void {
+    this.activeMethod.set(method);
+  }
+
+  protected getMethodLabel(method: SalePaymentMethod): string {
+    return this.paymentMethodOptions.find((o) => o.id === method)?.label ?? method;
+  }
+
+  protected getMethodIcon(method: SalePaymentMethod): string {
+    return this.paymentMethodOptions.find((o) => o.id === method)?.icon ?? 'tag';
+  }
+
+  protected removeCommittedPayment(id: string): void {
+    this.committedPayments.update((list) => list.filter((p) => p.id !== id));
+    const newRemaining = Math.round((this.cart.total() - this.alreadyPaid()) * 100) / 100;
+    this.paymentAmount.set(newRemaining > 0 ? newRemaining : 0);
+    this.paymentError.set(null);
+  }
+
+  private nextPaymentLineId(): string {
+    return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(2, 8);
   }
   protected readonly discountInput = signal<number>(0);
   protected readonly discountPctInput = signal<number>(0);
@@ -158,12 +225,6 @@ export class PdvComponent implements OnInit, OnDestroy {
       .slice(0, 8);
   });
 
-  protected readonly changeAmount = computed(() => {
-    if (this.paymentMethod() !== 'dinheiro') return null;
-    const received = Number(this.amountReceived()) || 0;
-    const total = this.cart.total();
-    return received >= total ? received - total : null;
-  });
 
   protected currentDateTime(): string {
     return new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
@@ -394,7 +455,10 @@ export class PdvComponent implements OnInit, OnDestroy {
 
   protected openPaymentModal(): void {
     this.paymentError.set(null);
-    this.setAmountReceived(this.cart.total());
+    const total = this.cart.total();
+    this.committedPayments.set([]);
+    this.activeMethod.set('dinheiro');
+    this.paymentAmount.set(Math.round(total * 100) / 100);
     this.showPaymentModal.set(true);
   }
 
@@ -405,16 +469,60 @@ export class PdvComponent implements OnInit, OnDestroy {
 
   protected confirmPayment(): void {
     this.paymentError.set(null);
-    const method = this.paymentMethod();
-    const received = method === 'dinheiro' ? Number(this.amountReceived()) || 0 : undefined;
+    const method = this.activeMethod();
+    const entered = Math.round((Number(this.paymentAmount()) || 0) * 100) / 100;
+    const remaining = this.remaining();
+
+    if (entered <= 0) {
+      this.paymentError.set('Insira um valor maior que zero.');
+      return;
+    }
+
+    if (method !== 'dinheiro' && entered > remaining + 0.005) {
+      this.paymentError.set(`O valor não pode exceder o restante (${this.cart.money(remaining)}).`);
+      return;
+    }
+
+    const isLastPayment = method === 'dinheiro'
+      ? entered >= remaining - 0.005
+      : Math.abs(entered - remaining) <= 0.005;
+
+    if (!isLastPayment) {
+      // Pagamento parcial: confirma essa parte e pede o método do restante
+      const committed = [...this.committedPayments(), { id: this.nextPaymentLineId(), method, amount: entered }];
+      this.committedPayments.set(committed);
+      const newRemaining = Math.round((this.cart.total() - committed.reduce((s, p) => s + p.amount, 0)) * 100) / 100;
+      this.paymentAmount.set(newRemaining > 0 ? newRemaining : 0);
+      const usedMethods = new Set(committed.map((p) => p.method));
+      const nextMethod = this.paymentMethodOptions.find((o) => !usedMethods.has(o.id))?.id ?? 'outros';
+      this.activeMethod.set(nextMethod);
+      this.paymentError.set('Selecione a forma de pagamento do restante.');
+      return;
+    }
+
+    // Pagamento completo
+    const allPayments = [
+      ...this.committedPayments().map((p) => ({ method: p.method, amount: p.amount })),
+      { method, amount: remaining },
+    ];
+    const dinheiroReceived = method === 'dinheiro' ? entered : undefined;
+    this.tryFinishOrder(allPayments, dinheiroReceived);
+  }
+
+  private tryFinishOrder(
+    payments: Array<{ method: SalePaymentMethod; amount: number }>,
+    received?: number
+  ): void {
     const snapshot: OrderSnapshotForPrint = {
       lines: [...this.cart.lines()],
       subtotal: this.cart.subtotal(),
       discount: this.cart.orderDiscount(),
       total: this.cart.total(),
       orderNumber: this.cart.nextOrderNumber(),
+      payments,
+      dinheiroReceived: received ?? null,
     };
-    const result = this.cart.finishOrder(method, received);
+    const result = this.cart.finishOrder(payments, received);
     if (result.success) {
       this.closePaymentModal();
       this.orderDataForPrint.set(snapshot);
