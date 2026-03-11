@@ -13,6 +13,7 @@ import { PdvDailyReportComponent } from './pdv-daily-report.component';
 import { PdvMonthlyReportComponent } from './pdv-monthly-report.component';
 import { PdvYearlyReportComponent } from './pdv-yearly-report.component';
 import { PdvItemsDatabaseComponent } from './pdv-items-database.component';
+import { PdvCadastroProdutosComponent } from './pdv-cadastro-produtos.component';
 import { PdvIfoodCalculatorComponent } from './pdv-ifood-calculator.component';
 
 export interface OrderSnapshotForPrint {
@@ -36,6 +37,7 @@ const LS_CATEGORIES_ORDER = 'pdv.categoriesOrder.v1';
     PdvMonthlyReportComponent,
     PdvYearlyReportComponent,
     PdvItemsDatabaseComponent,
+    PdvCadastroProdutosComponent,
     PdvIfoodCalculatorComponent,
   ],
   templateUrl: './pdv.component.html',
@@ -85,12 +87,13 @@ export class PdvComponent implements OnInit, OnDestroy {
     { id: 'tab-monthly', label: 'Relatório mensal' },
     { id: 'tab-yearly', label: 'Relatório anual' },
     { id: 'tab-bd-items', label: 'BD ITEMS' },
+    { id: 'tab-cadastro-produtos', label: 'Cadastro de Produtos' },
     { id: 'tab-ifood', label: 'Calculadora iFood' },
   ];
 
   protected readonly selectedCategory = signal<PdvCategoryId>(PDV_CATEGORIES[0].id);
   protected readonly searchQuery = signal('');
-  protected readonly barcodeInput = signal('');
+  protected readonly codeInput = signal('');
   protected readonly showPaymentModal = signal(false);
   protected readonly showDiscountModal = signal(false);
   protected readonly paymentMethod = signal<'dinheiro' | 'debito' | 'credito' | 'pix' | 'outros'>('dinheiro');
@@ -357,13 +360,13 @@ export class PdvComponent implements OnInit, OnDestroy {
     this.cart.toggleFavorite(productId);
   }
 
-  protected onBarcodeSubmit(): void {
-    const value = this.barcodeInput().trim();
+  protected onCodeSubmit(): void {
+    const value = this.codeInput().trim();
     if (!value) return;
-    const product = this.catalog.findByBarcode(value);
+    const product = this.catalog.findByGlobalCode(value);
     if (product) {
       this.cart.addItem(product, 1);
-      this.barcodeInput.set('');
+      this.codeInput.set('');
     }
   }
 

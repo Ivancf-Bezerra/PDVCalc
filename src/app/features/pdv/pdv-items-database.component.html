@@ -1,83 +1,25 @@
 <div class="pdv-page">
   <h2 class="pdv-panel-title">Banco de dados dos itens (BD ITEMS)</h2>
   <p class="pdv-intro">
-    Itens vindos da calculadora de precificação ou adicionados como produto de fornecedor.
-    Defina <strong>categoria</strong> e <strong>código de barras</strong> para o PDV;
-    use o campo "Valor manual" para definir o preço de venda.
+    Lista unificada: itens da <strong>Calculadora de Precificação</strong> (receitas) e produtos do
+    <strong>Cadastro de Produtos</strong> (revenda). Use os cards para filtrar por categoria;
+    edite valor manual e categoria na tabela. O código (3 letras + 4 números, ex.: REC0001, REV0002) é gerado automaticamente na ordem de cadastro.
   </p>
 
-  <!-- Bloco: Adicionar produto de fornecedor -->
-  <section class="pdv-bd-block pdv-bd-supplier" aria-labelledby="bd-supplier-title">
-    <h3 id="bd-supplier-title" class="pdv-bd-block-title">
-      <lucide-angular name="package" [size]="18" aria-hidden="true"></lucide-angular>
-      Adicionar produto de fornecedor
-    </h3>
-    <p class="pdv-bd-block-hint">Produtos que não vêm de receita (ex.: bebidas, embalagens compradas).</p>
-    <form class="pdv-bd-supplier-form" (ngSubmit)="submitSupplierItem()">
-      <div class="pdv-bd-supplier-fields">
-        <label class="pdv-bd-supplier-label">
-          Nome
-          <input
-            type="text"
-            class="pdv-input pdv-input-text"
-            placeholder="Ex: Refrigerante 350ml"
-            [ngModel]="newSupplierName()"
-            (ngModelChange)="newSupplierName.set($event)"
-            name="supplierName"
-          >
-        </label>
-        <label class="pdv-bd-supplier-label">
-          Categoria
-          <select
-            class="pdv-input pdv-select"
-            [ngModel]="newSupplierCategory()"
-            (ngModelChange)="newSupplierCategory.set($event)"
-            name="supplierCategory"
-          >
-            @for (cat of PDV_CATEGORIES; track cat.id) {
-              <option [value]="cat.id">{{ cat.label }}</option>
-            }
-          </select>
-        </label>
-        <label class="pdv-bd-supplier-label">
-          Cód. barras (opcional)
-          <input
-            type="text"
-            class="pdv-input pdv-input-text pdv-input-barcode"
-            placeholder="Opcional"
-            [ngModel]="newSupplierBarcode()"
-            (ngModelChange)="newSupplierBarcode.set($event)"
-            name="supplierBarcode"
-          >
-        </label>
-        <label class="pdv-bd-supplier-label">
-          Preço de venda (R$)
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            class="pdv-input pdv-input-number"
-            placeholder="0,00"
-            [ngModel]="newSupplierPrice()"
-            (ngModelChange)="newSupplierPrice.set($event)"
-            name="supplierPrice"
-          >
-        </label>
+  @if (catalog.items().length > 0) {
+    <div class="pdv-bd-search">
+      <div class="pdv-search-wrap">
+        <input
+          type="text"
+          class="pdv-search-input"
+          placeholder="Buscar por nome..."
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+        >
+        <lucide-angular name="search" [size]="18" class="pdv-search-icon" aria-hidden="true"></lucide-angular>
       </div>
-      <div class="pdv-bd-supplier-actions">
-        <button type="submit" class="pdv-btn-primary">
-          <lucide-angular name="plus" [size]="16" aria-hidden="true"></lucide-angular>
-          Adicionar
-        </button>
-        @if (supplierFormError()) {
-          <span class="pdv-bd-form-error" role="alert">{{ supplierFormError() }}</span>
-        }
-        @if (supplierFormSuccess()) {
-          <span class="pdv-bd-form-success">{{ supplierFormSuccess() }}</span>
-        }
-      </div>
-    </form>
-  </section>
+    </div>
+  }
 
   <!-- Filtro por categoria: cards -->
   <section class="pdv-bd-categories" aria-label="Filtrar por categoria">
@@ -107,21 +49,6 @@
     </div>
   </section>
 
-  @if (catalog.items().length > 0) {
-    <div class="pdv-bd-search">
-      <div class="pdv-search-wrap">
-        <input
-          type="text"
-          class="pdv-search-input"
-          placeholder="Buscar por nome..."
-          [ngModel]="searchQuery()"
-          (ngModelChange)="searchQuery.set($event)"
-        >
-        <lucide-angular name="search" [size]="18" class="pdv-search-icon" aria-hidden="true"></lucide-angular>
-      </div>
-    </div>
-  }
-
   <div
     class="pdv-table-wrap"
     [class.table-min-5-rows]="paginatedLength(filteredItems(), 'bd-items') < 5"
@@ -129,6 +56,7 @@
     <table class="pdv-table pdv-table-items">
       <thead>
         <tr>
+          <th scope="col">Código</th>
           <th scope="col">Item</th>
           <th scope="col" class="text-right">CMV</th>
           <th scope="col" class="text-right">Taxas (%)</th>
@@ -136,13 +64,13 @@
           <th scope="col">Valor manual</th>
           <th scope="col" class="text-right">Preço em uso</th>
           <th scope="col">Categoria</th>
-          <th scope="col">Cód. barras</th>
           <th scope="col" class="text-right"></th>
         </tr>
       </thead>
       <tbody>
         @for (item of paginate(filteredItems(), 'bd-items'); track item.id) {
           <tr>
+            <td class="cell-code">{{ catalog.getGlobalCode(item) }}</td>
             <td class="cell-title">{{ item.name }}</td>
             <td class="text-right">{{ catalog.money(item.cmv) }}</td>
             <td class="text-right">
@@ -178,16 +106,6 @@
                 }
               </select>
             </td>
-            <td>
-              <input
-                type="text"
-                class="pdv-input pdv-input-barcode"
-                placeholder="Código"
-                [ngModel]="item.barcode ?? ''"
-                (ngModelChange)="setBarcode(item, $event)"
-                [attr.aria-label]="'Código de barras de ' + item.name"
-              >
-            </td>
             <td class="text-right">
               <button
                 type="button"
@@ -206,10 +124,10 @@
               @if (searchQuery().trim()) {
                 Nenhum item encontrado para "{{ searchQuery().trim() }}".
               } @else if (selectedCategoryFilter()) {
-                Nenhum item nesta categoria. Adicione produtos ou altere a categoria dos itens.
+                Nenhum item nesta categoria. Adicione produtos no Cadastro de Produtos ou altere a categoria dos itens.
               } @else {
-                Nenhum item no catálogo. Salve receitas na Calculadora de
-                Precificação ou adicione produtos de fornecedor acima.
+                Nenhum item no catálogo. Use a Calculadora de Precificação (receitas) ou
+                Cadastro de Produtos (revenda) para adicionar itens.
               }
             </td>
           </tr>

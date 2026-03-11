@@ -54,6 +54,9 @@ import {
   RotateCcw,
   Eye,
   GripVertical,
+  Hash,
+  List,
+  Layers,
 } from 'lucide-angular';
 
 import { routes } from './app.routes';
@@ -116,6 +119,9 @@ export const appConfig: ApplicationConfig = {
         RotateCcw,
         Eye,
         GripVertical,
+        Hash,
+        List,
+        Layers,
       })
     )
   ]

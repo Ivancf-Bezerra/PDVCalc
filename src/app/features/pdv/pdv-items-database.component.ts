@@ -34,14 +34,6 @@ export class PdvItemsDatabaseComponent {
     return list;
   });
 
-  /** Formulário: adicionar produto de fornecedor */
-  protected readonly newSupplierName = signal('');
-  protected readonly newSupplierCategory = signal<PdvCategoryId>('outros');
-  protected readonly newSupplierBarcode = signal('');
-  protected readonly newSupplierPrice = signal<number | ''>('');
-  protected readonly supplierFormError = signal('');
-  protected readonly supplierFormSuccess = signal('');
-
   private readonly tablePagination = createTablePagination(5);
   protected readonly pageSizeOptions = this.tablePagination.pageSizeOptions;
   protected readonly getTablePage = this.tablePagination.getTablePage;
@@ -54,10 +46,6 @@ export class PdvItemsDatabaseComponent {
 
   protected effectivePrice(item: CatalogItem): number {
     return this.catalog.effectivePrice(item);
-  }
-
-  protected setUseManual(item: CatalogItem, use: boolean): void {
-    this.catalog.setUseManualPrice(item.id, use);
   }
 
   protected onManualPriceChange(item: CatalogItem, value: string | number | null): void {
@@ -74,45 +62,12 @@ export class PdvItemsDatabaseComponent {
     this.catalog.setCategory(item.id, categoryId || null);
   }
 
-  protected setBarcode(item: CatalogItem, value: string): void {
-    this.catalog.setBarcode(item.id, value);
-  }
-
   protected removeItem(id: string): void {
     this.catalog.removeItem(id);
   }
 
   protected setCategoryFilter(cat: PdvCategoryId | null): void {
     this.selectedCategoryFilter.set(cat);
-  }
-
-  protected submitSupplierItem(): void {
-    this.supplierFormError.set('');
-    this.supplierFormSuccess.set('');
-    const name = this.newSupplierName().trim();
-    if (!name) {
-      this.supplierFormError.set('Informe o nome do produto.');
-      return;
-    }
-    const priceRaw = this.newSupplierPrice();
-    const price = typeof priceRaw === 'number' ? priceRaw : parseFloat(String(priceRaw ?? ''));
-    if (!Number.isFinite(price) || price < 0) {
-      this.supplierFormError.set('Informe um preço de venda válido.');
-      return;
-    }
-    const added = this.catalog.addSupplierItem({
-      name,
-      categoryId: this.newSupplierCategory(),
-      barcode: this.newSupplierBarcode().trim() || undefined,
-      price,
-    });
-    if (added) {
-      this.newSupplierName.set('');
-      this.newSupplierCategory.set('outros');
-      this.newSupplierBarcode.set('');
-      this.newSupplierPrice.set('');
-      this.supplierFormSuccess.set('Produto adicionado.');
-    }
   }
 }
 

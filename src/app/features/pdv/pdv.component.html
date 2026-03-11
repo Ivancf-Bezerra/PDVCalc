@@ -42,12 +42,12 @@
                 <input
                   type="text"
                   class="pdv-barcode-input"
-                  placeholder="Código de barras"
-                  [ngModel]="barcodeInput()"
-                  (ngModelChange)="barcodeInput.set($event)"
-                  (keydown.enter)="onBarcodeSubmit(); $event.preventDefault()"
+                  placeholder="Código (ex.: REV0001)"
+                  [ngModel]="codeInput()"
+                  (ngModelChange)="codeInput.set($event)"
+                  (keydown.enter)="onCodeSubmit(); $event.preventDefault()"
                 >
-                <lucide-angular name="tag" [size]="18" class="pdv-barcode-icon" aria-hidden="true"></lucide-angular>
+                <lucide-angular name="hash" [size]="18" class="pdv-barcode-icon" aria-hidden="true"></lucide-angular>
               </div>
             </div>
             <div class="pdv-cat-strip-wrap">
@@ -371,6 +371,11 @@
     <!-- Aba BD ITEMS -->
     <section class="pdv-panel" [class.active]="effectiveTab() === 'tab-bd-items'" id="tab-bd-items">
       <app-pdv-items-database></app-pdv-items-database>
+    </section>
+
+    <!-- Aba Cadastro de Produtos -->
+    <section class="pdv-panel" [class.active]="effectiveTab() === 'tab-cadastro-produtos'" id="tab-cadastro-produtos">
+      <app-pdv-cadastro-produtos></app-pdv-cadastro-produtos>
     </section>
 
     <!-- Aba Calculadora iFood -->

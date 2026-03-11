@@ -99,19 +99,27 @@ describe('ItemsCatalogService', () => {
     expect(service.searchByName('').length).toBe(2);
   });
 
-  // --- findByBarcode ---
+  // --- getGlobalCode / findByGlobalCode ---
 
-  it('deve localizar produto por código de barras', () => {
+  it('deve atribuir código global REC0001 a item de receita (3 letras + 4 números)', () => {
     service.syncFromRecipe({ recipeId: 'r1', name: 'Brigadeiro', cmv: 1, feesPct: 0, suggestedPrice: 5 });
-    const id = service.items()[0].id;
-    service.setBarcode(id, '1234567890');
-    const found = service.findByBarcode('1234567890');
+    const item = service.items()[0];
+    const code = service.getGlobalCode(item);
+    expect(code).toMatch(/^REC\d{4}$/);
+    expect(code).toBe('REC0001');
+  });
+
+  it('deve localizar produto por código global', () => {
+    service.syncFromRecipe({ recipeId: 'r1', name: 'Brigadeiro', cmv: 1, feesPct: 0, suggestedPrice: 5 });
+    const item = service.items()[0];
+    const code = service.getGlobalCode(item);
+    const found = service.findByGlobalCode(code);
     expect(found).not.toBeNull();
     expect(found?.name).toBe('Brigadeiro');
   });
 
-  it('deve retornar null para código de barras não encontrado', () => {
-    expect(service.findByBarcode('9999')).toBeNull();
+  it('deve retornar null para código global não encontrado', () => {
+    expect(service.findByGlobalCode('REV9999')).toBeNull();
   });
 
   // --- setCategory ---
@@ -126,35 +134,39 @@ describe('ItemsCatalogService', () => {
     expect(service.items()[0].categoryId).toBeUndefined();
   });
 
-  // --- setBarcode ---
-
-  it('deve alterar código de barras do item', () => {
-    service.syncFromRecipe({ recipeId: 'r1', name: 'Brigadeiro', cmv: 1, feesPct: 0, suggestedPrice: 5 });
-    const id = service.items()[0].id;
-    service.setBarcode(id, ' 789012 ');
-    expect(service.items()[0].barcode).toBe('789012');
-    service.setBarcode(id, '');
-    expect(service.items()[0].barcode).toBeNull();
-  });
-
   // --- addSupplierItem ---
 
-  it('deve adicionar produto de fornecedor (sem receita)', () => {
+  it('deve adicionar produto de fornecedor (sem receita) com CMV, markup e valor sugerido', () => {
     const added = service.addSupplierItem({
       name: 'Refrigerante 350ml',
       categoryId: 'bebidas-geladas',
-      barcode: '789123',
       price: 5.5,
+      markupPct: 0,
     });
     expect(added).not.toBeNull();
     expect(service.items().length).toBe(1);
     expect(service.items()[0].name).toBe('Refrigerante 350ml');
     expect(service.items()[0].recipeId).toBeNull();
     expect(service.items()[0].categoryId).toBe('bebidas-geladas');
-    expect(service.items()[0].barcode).toBe('789123');
-    expect(service.items()[0].useManualPrice).toBe(true);
-    expect(service.items()[0].manualPrice).toBe(5.5);
+    expect(service.getGlobalCode(service.items()[0])).toMatch(/^REV\d{4}$/);
+    expect(service.items()[0].cmv).toBe(5.5);
+    expect(service.items()[0].feesPct).toBe(0);
+    expect(service.items()[0].suggestedPrice).toBe(5.5);
+    expect(service.items()[0].useManualPrice).toBe(false);
     expect(service.effectivePrice(service.items()[0])).toBe(5.5);
+  });
+
+  it('deve calcular valor sugerido com markup padrão (30%)', () => {
+    const added = service.addSupplierItem({
+      name: 'Suco',
+      categoryId: 'bebidas-geladas',
+      price: 10,
+    });
+    expect(added).not.toBeNull();
+    expect(service.items()[0].cmv).toBe(10);
+    expect(service.items()[0].feesPct).toBe(30);
+    expect(service.items()[0].suggestedPrice).toBe(13);
+    expect(service.effectivePrice(service.items()[0])).toBe(13);
   });
 
   it('não deve adicionar produto de fornecedor com nome vazio', () => {

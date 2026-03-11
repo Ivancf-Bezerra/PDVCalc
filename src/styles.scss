@@ -724,9 +724,37 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
 .pdv-check-wrap input[type="checkbox"],
 .pdv-check-wrap input[type="radio"] { cursor: pointer; }
 .pdv-input-inline { width: 6rem; }
-.pdv-select-inline { width: 100%; min-width: 9rem; max-width: 12rem; padding: var(--space-1) var(--space-2); font-size: 0.8125rem; border-radius: var(--hy-radius); border: 1px solid var(--hy-border); background: var(--hy-bg-card); color: var(--hy-text-body); cursor: pointer; }
+
+/* Ícone de dropdown (chevron) em todos os selects */
+$select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+.pdv-select-inline {
+  width: 100%;
+  min-width: 9rem;
+  max-width: 12rem;
+  padding: var(--space-1) var(--space-2);
+  padding-right: 2.25rem;
+  font-size: 0.8125rem;
+  border-radius: var(--hy-radius);
+  border: 1px solid var(--hy-border);
+  background-color: var(--hy-bg-card);
+  background-image: $select-chevron;
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1rem;
+  color: var(--hy-text-body);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
 .pdv-input-barcode { width: 8rem; }
+.pdv-input-size { width: 5rem; min-width: 4rem; }
+.pdv-input-brand { width: 7rem; min-width: 5rem; }
+.pdv-input-notes { width: 8rem; min-width: 5rem; }
+.pdv-input-qty { width: 4rem; }
 .pdv-table-items { min-width: 52rem; }
+.pdv-table-cadastro { min-width: 72rem; }
+.pdv-table-wrap--scroll { overflow-x: auto; }
 
 /* BD ITEMS: bloco Adicionar produto de fornecedor */
 .pdv-bd-block {
@@ -760,6 +788,39 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
 @media (min-width: 640px) {
   .pdv-bd-supplier-fields { grid-template-columns: 2fr 1fr 1fr 1fr; }
 }
+.pdv-bd-supplier-fields--wide {
+  grid-template-columns: 1fr 1fr;
+}
+@media (min-width: 768px) {
+  .pdv-bd-supplier-fields--wide {
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  }
+}
+@media (min-width: 1024px) {
+  .pdv-bd-supplier-fields--wide {
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  }
+}
+.pdv-bd-supplier-label--full { grid-column: 1 / -1; }
+.pdv-bd-supplier-label-text { display: block; margin-bottom: var(--space-1); }
+.pdv-bd-supplier-fields--align {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: var(--space-3);
+  align-items: end;
+}
+@media (min-width: 640px) {
+  .pdv-bd-supplier-fields--align {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (min-width: 900px) {
+  .pdv-bd-supplier-fields--align {
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  }
+}
+.pdv-bd-supplier-fields--align .pdv-bd-supplier-label--full { grid-column: 1 / -1; }
 .pdv-bd-supplier-label {
   display: flex;
   flex-direction: column;
@@ -770,7 +831,28 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
 }
 .pdv-bd-supplier-label .pdv-input-text { min-width: 0; }
 .pdv-bd-supplier-label .pdv-select { min-width: 0; cursor: pointer; }
+/* Selects do PDV/Cadastro com ícone dropdown */
+.pdv-page select.pdv-select,
+.pdv-page select.pdv-input.pdv-select {
+  padding-right: 2.25rem;
+  background-color: var(--hy-bg-card);
+  background-image: $select-chevron;
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1rem;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
 .pdv-bd-supplier-label .pdv-input-number { width: 6rem; }
+.pdv-bd-supplier-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--hy-text-title);
+  min-height: 2.25rem;
+  display: flex;
+  align-items: center;
+}
 .pdv-bd-supplier-actions {
   display: flex;
   align-items: center;
@@ -781,25 +863,21 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
 .pdv-bd-form-success { font-size: 0.8125rem; color: var(--hy-success); }
 
 /* BD ITEMS: cards de categoria para filtrar */
-.pdv-bd-categories { margin-bottom: var(--space-4); }
+.pdv-bd-categories { margin-bottom: var(--space-4); width: 100%; }
 .pdv-bd-categories-grid {
   display: flex;
   flex-wrap: nowrap;
   gap: var(--space-1);
-  overflow-x: auto;
-  padding-bottom: var(--space-1);
-  scrollbar-width: thin;
+  width: 100%;
 }
-.pdv-bd-categories-grid::-webkit-scrollbar { height: 6px; }
-.pdv-bd-categories-grid::-webkit-scrollbar-thumb { background: var(--hy-border); border-radius: 3px; }
 .pdv-bd-cat-card {
-  display: inline-flex;
+  display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
-  flex-shrink: 0;
-  width: 4rem;
+  min-width: 0;
   min-height: 3.25rem;
   padding: var(--space-1) var(--space-2);
   background: var(--hy-bg-card);
@@ -942,13 +1020,21 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
 .pdv-year-select-label { font-size: 0.75rem; font-weight: 600; color: var(--hy-text-muted); }
 .pdv-year-select {
   padding: var(--space-2) var(--space-3);
+  padding-right: 2.25rem;
   border: 1px solid var(--hy-border);
   border-radius: var(--hy-radius);
-  background: var(--hy-bg-card);
+  background-color: var(--hy-bg-card);
+  background-image: $select-chevron;
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1rem;
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--hy-text-title);
   min-width: 5rem;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
 .pdv-daily-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); margin-bottom: var(--space-3); }
 @media (max-width: 768px) { .pdv-daily-summary { grid-template-columns: repeat(2, 1fr); } }
@@ -1228,6 +1314,7 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
 .pdv-page .pdv-table tbody tr:hover { background: color-mix(in srgb, var(--hy-gray-soft) 45%, transparent); }
 .pdv-page .pdv-table tbody tr:last-child td { border-bottom: none; }
 .pdv-page .pdv-table .cell-title { color: var(--hy-text-title); font-weight: 500; }
+.pdv-page .pdv-table .cell-code { font-size: 0.6875rem; font-weight: 600; color: var(--hy-text-muted); font-family: ui-monospace, monospace; }
 .pdv-page .pdv-table .cell-total { font-weight: 600; color: var(--hy-text-title); }
 .pdv-page .pdv-btn-remove { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); font-size: 0.8125rem; font-weight: 500; color: var(--hy-danger); background: none; border: none; cursor: pointer; padding: 0; }
 .pdv-page .pdv-btn-remove:hover { text-decoration: underline; }
@@ -1639,7 +1726,25 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
 .pdv-modal-field { margin-bottom: var(--space-3); }
 .pdv-modal-field label { display: block; margin-bottom: var(--space-1); font-size: 0.8125rem; font-weight: 600; color: var(--hy-text-title); }
 .pdv-modal-field input,
-.pdv-modal-field select { width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--hy-border); border-radius: var(--hy-radius); background: var(--hy-bg-body); font-size: 0.8125rem; }
+.pdv-modal-field select {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--hy-border);
+  border-radius: var(--hy-radius);
+  background: var(--hy-bg-body);
+  font-size: 0.8125rem;
+}
+.pdv-modal-field select {
+  padding-right: 2.25rem;
+  background-color: var(--hy-bg-body);
+  background-image: $select-chevron;
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1rem;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
 .pdv-qty-stepper {
   display: flex; align-items: center; gap: var(--space-2);
 }
@@ -1800,6 +1905,17 @@ a { text-decoration: none; color: var(--hy-primary); transition: color 0.2s; }
     height: 2.5rem;
     min-height: 2.5rem;
     box-sizing: border-box;
+  }
+  .recipe-data-field select {
+    padding-right: 2.25rem;
+    background-color: var(--hy-bg-card);
+    background-image: $select-chevron;
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1rem;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
   }
   .recipe-card-section-data .recipe-category-row {
     margin-bottom: var(--space-3);

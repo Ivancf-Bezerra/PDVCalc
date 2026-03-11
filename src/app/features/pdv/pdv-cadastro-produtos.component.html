@@ -1,0 +1,278 @@
+<div class="pdv-page">
+  <h2 class="pdv-panel-title">Cadastro de Produtos</h2>
+  <p class="pdv-intro">
+    Mercadorias compradas para revenda (bebidas, itens em quantidade, etc.). Informe o <strong>CMV</strong> (custo)
+    e o <strong>markup (%)</strong>; o valor sugerido é calculado automaticamente e usado no PDV. Os itens aparecem no <strong>BD ITEMS</strong> e no PDV.
+  </p>
+
+  <!-- Formulário: adicionar produto de fornecedor -->
+  <section class="pdv-bd-block pdv-bd-supplier" aria-labelledby="cadastro-supplier-title">
+    <h3 id="cadastro-supplier-title" class="pdv-bd-block-title">
+      <lucide-angular name="package" [size]="18" aria-hidden="true"></lucide-angular>
+      Novo produto de fornecedor
+    </h3>
+    <p class="pdv-bd-block-hint">CMV × (1 + markup%) = <strong>valor sugerido</strong>, usado no PDV. O código do item é gerado automaticamente (REV + 4 números na ordem do cadastro, ex.: REV0001).</p>
+    <form class="pdv-bd-supplier-form" (ngSubmit)="submitSupplierItem()">
+      <div class="pdv-bd-supplier-fields pdv-bd-supplier-fields--align">
+        <label class="pdv-bd-supplier-label">
+          <span class="pdv-bd-supplier-label-text">Nome</span>
+          <input
+            type="text"
+            class="pdv-input pdv-input-text"
+            placeholder="Ex: Refrigerante 350ml"
+            [ngModel]="newSupplierName()"
+            (ngModelChange)="newSupplierName.set($event)"
+            name="supplierName"
+          >
+        </label>
+        <label class="pdv-bd-supplier-label">
+          <span class="pdv-bd-supplier-label-text">Categoria</span>
+          <select
+            class="pdv-input pdv-select"
+            [ngModel]="newSupplierCategory()"
+            (ngModelChange)="newSupplierCategory.set($event)"
+            name="supplierCategory"
+          >
+            @for (cat of PDV_CATEGORIES; track cat.id) {
+              <option [value]="cat.id">{{ cat.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="pdv-bd-supplier-label">
+          <span class="pdv-bd-supplier-label-text">Tamanho / volume</span>
+          <input
+            type="text"
+            class="pdv-input pdv-input-text"
+            placeholder="Ex: 350ml, 1L"
+            [ngModel]="newSupplierSizeOrVolume()"
+            (ngModelChange)="newSupplierSizeOrVolume.set($event)"
+            name="supplierSize"
+          >
+        </label>
+        <label class="pdv-bd-supplier-label">
+          <span class="pdv-bd-supplier-label-text">CMV (R$)</span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            class="pdv-input pdv-input-number"
+            placeholder="0,00"
+            [ngModel]="newSupplierCmv()"
+            (ngModelChange)="newSupplierCmv.set($event)"
+            name="supplierCmv"
+          >
+        </label>
+        <label class="pdv-bd-supplier-label">
+          <span class="pdv-bd-supplier-label-text">Markup (%)</span>
+          <input
+            type="number"
+            min="0"
+            step="0.5"
+            class="pdv-input pdv-input-number"
+            placeholder="30"
+            [ngModel]="newSupplierMarkupPct()"
+            (ngModelChange)="newSupplierMarkupPct.set($event)"
+            name="supplierMarkup"
+          >
+        </label>
+        <label class="pdv-bd-supplier-label">
+          <span class="pdv-bd-supplier-label-text">Valor sugerido (R$)</span>
+          <span class="pdv-bd-supplier-value">{{ catalog.money(computedSuggestedPrice()) }}</span>
+        </label>
+        <label class="pdv-bd-supplier-label pdv-bd-supplier-label--full">
+          <span class="pdv-bd-supplier-label-text">Observações</span>
+          <input
+            type="text"
+            class="pdv-input pdv-input-text"
+            placeholder="Opcional"
+            [ngModel]="newSupplierNotes()"
+            (ngModelChange)="newSupplierNotes.set($event)"
+            name="supplierNotes"
+          >
+        </label>
+      </div>
+      <div class="pdv-bd-supplier-actions">
+        <button type="submit" class="pdv-btn-primary">
+          <lucide-angular name="plus" [size]="16" aria-hidden="true"></lucide-angular>
+          Adicionar
+        </button>
+        @if (supplierFormError()) {
+          <span class="pdv-bd-form-error" role="alert">{{ supplierFormError() }}</span>
+        }
+        @if (supplierFormSuccess()) {
+          <span class="pdv-bd-form-success">{{ supplierFormSuccess() }}</span>
+        }
+      </div>
+    </form>
+  </section>
+
+  <!-- Lista de produtos cadastrados (apenas de fornecedor) -->
+  <section class="pdv-bd-block" aria-labelledby="cadastro-list-title">
+    <h3 id="cadastro-list-title" class="pdv-bd-block-title">
+      <lucide-angular name="list" [size]="18" aria-hidden="true"></lucide-angular>
+      Produtos cadastrados (revenda)
+    </h3>
+    <p class="pdv-bd-block-hint">Edite os campos na tabela; remova se não usar mais.</p>
+
+    <div
+      class="pdv-table-wrap pdv-table-wrap--scroll"
+      [class.table-min-5-rows]="paginatedLength(supplierItems(), 'cadastro-prod') < 5"
+    >
+      <table class="pdv-table pdv-table-items pdv-table-cadastro">
+        <thead>
+          <tr>
+            <th scope="col">Código</th>
+            <th scope="col">Item</th>
+            <th scope="col">Categoria</th>
+            <th scope="col">Tamanho</th>
+            <th scope="col" class="text-right">CMV</th>
+            <th scope="col" class="text-right">Markup %</th>
+            <th scope="col" class="text-right">Valor sugerido</th>
+            <th scope="col" class="text-right">Preço venda</th>
+            <th scope="col">Obs.</th>
+            <th scope="col" class="text-right"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of paginate(supplierItems(), 'cadastro-prod'); track item.id) {
+            <tr>
+              <td class="cell-code">{{ getGlobalCode(item) }}</td>
+              <td class="cell-title">{{ item.name }}</td>
+              <td>
+                <select
+                  class="pdv-input pdv-select-inline"
+                  [ngModel]="item.categoryId ?? 'outros'"
+                  (ngModelChange)="setCategory(item, $event)"
+                  [attr.aria-label]="'Categoria de ' + item.name"
+                >
+                  @for (cat of PDV_CATEGORIES; track cat.id) {
+                    <option [value]="cat.id">{{ cat.label }}</option>
+                  }
+                </select>
+              </td>
+              <td>
+                <input
+                  type="text"
+                  class="pdv-input pdv-input-size"
+                  placeholder="Ex: 350ml"
+                  [ngModel]="item.sizeOrVolume ?? ''"
+                  (ngModelChange)="setSizeOrVolume(item, $event)"
+                  [attr.aria-label]="'Tamanho de ' + item.name"
+                >
+              </td>
+              <td class="text-right">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="pdv-input pdv-input-inline"
+                  [ngModel]="item.cmv"
+                  (ngModelChange)="setCmv(item, $event)"
+                  [attr.aria-label]="'CMV de ' + item.name"
+                >
+              </td>
+              <td class="text-right">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  class="pdv-input pdv-input-inline pdv-input-qty"
+                  [ngModel]="item.feesPct"
+                  (ngModelChange)="setMarkupPct(item, $event)"
+                  [attr.aria-label]="'Markup de ' + item.name"
+                >
+              </td>
+              <td class="text-right cell-code">{{ catalog.money(item.suggestedPrice) }}</td>
+              <td class="text-right">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="pdv-input pdv-input-inline"
+                  [ngModel]="effectivePrice(item)"
+                  (ngModelChange)="onManualPriceChange(item, $event)"
+                  [attr.aria-label]="'Preço venda de ' + item.name"
+                >
+              </td>
+              <td>
+                <input
+                  type="text"
+                  class="pdv-input pdv-input-notes"
+                  placeholder="Obs."
+                  [ngModel]="item.notes ?? ''"
+                  (ngModelChange)="setNotes(item, $event)"
+                  [attr.aria-label]="'Observações de ' + item.name"
+                >
+              </td>
+              <td class="text-right">
+                <button
+                  type="button"
+                  class="pdv-btn-remove pdv-btn-icon-only"
+                  (click)="removeItem(item.id)"
+                  aria-label="Remover item"
+                  title="Remover"
+                >
+                  <lucide-angular name="trash-2" [size]="14" aria-hidden="true"></lucide-angular>
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="10" class="pdv-empty">
+                Nenhum produto de revenda cadastrado. Use o formulário acima para adicionar.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @let listItems = supplierItems();
+    @let listInfo = paginationInfo(listItems, 'cadastro-prod');
+    @if (listItems.length > 0) {
+      <div class="table-pagination">
+        <span class="table-pagination-size">
+          Exibir
+          <select
+            class="table-pagination-select"
+            [ngModel]="getTablePageSize('cadastro-prod')"
+            (ngModelChange)="onPageSizeChange('cadastro-prod', $event)"
+          >
+            @for (opt of pageSizeOptions; track opt) {
+              <option [value]="opt">{{ opt }}</option>
+            }
+          </select>
+          itens
+        </span>
+        <span class="table-pagination-range">
+          {{ listInfo.start }}-{{ listInfo.end }} de {{ listInfo.total }}
+        </span>
+        @if (listInfo.totalPages > 1) {
+          <div class="table-pagination-nav">
+            <button
+              type="button"
+              class="table-pagination-btn"
+              (click)="setTablePage('cadastro-prod', listInfo.currentPage - 1)"
+              [disabled]="listInfo.currentPage <= 1"
+              aria-label="Página anterior"
+            >
+              Anterior
+            </button>
+            <span class="table-pagination-page">
+              Página {{ listInfo.currentPage }} de {{ listInfo.totalPages }}
+            </span>
+            <button
+              type="button"
+              class="table-pagination-btn"
+              (click)="setTablePage('cadastro-prod', listInfo.currentPage + 1)"
+              [disabled]="listInfo.currentPage >= listInfo.totalPages"
+              aria-label="Próxima página"
+            >
+              Próxima
+            </button>
+          </div>
+        }
+      </div>
+    }
+  </section>
+</div>
