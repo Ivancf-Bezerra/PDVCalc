@@ -63,7 +63,8 @@
                       draggable="true"
                       [class.pdv-cat-chip--active]="selectedCategory() === cat.id"
                       (dragstart)="onCategoryDragStart($event, cat.id)"
-                      (dragover)="onCategoryDragOver($event, cat.id)"
+                      (dragover)="onCategoryDragOver($event)"
+                      (drop)="onCategoryDrop($event, cat.id)"
                       (dragend)="onCategoryDragEnd()"
                       (click)="selectCategoryAndCenter(cat.id)"
                     >
@@ -280,27 +281,45 @@
         <div class="pdv-modal-backdrop" (click)="closePaymentModal()" role="presentation"></div>
         <div class="pdv-modal pdv-modal-payment" role="dialog" aria-labelledby="pdv-payment-title">
           <h2 id="pdv-payment-title" class="pdv-modal-title">Finalizar venda</h2>
-          <p class="pdv-modal-total">Total: <strong>{{ cart.money(cart.total()) }}</strong></p>
-          <div class="pdv-modal-field">
-            <label for="pdv-payment-method">Forma de pagamento</label>
-            <select id="pdv-payment-method" [ngModel]="paymentMethod()" (ngModelChange)="paymentMethod.set($event)">
-              <option value="dinheiro">Dinheiro</option>
-              <option value="debito">Cartão de débito</option>
-              <option value="credito">Cartão de crédito</option>
-              <option value="pix">Pix</option>
-              <option value="outros">Outros</option>
-            </select>
+          <div class="pdv-modal-total-card" aria-label="Total a pagar">
+            <span class="pdv-modal-total-label">Total</span>
+            <span class="pdv-modal-total-value">{{ cart.money(cart.total()) }}</span>
           </div>
-          @if (paymentMethod() === 'dinheiro') {
-            <div class="pdv-modal-field">
-              <label for="pdv-amount-received">Valor recebido (R$)</label>
-              <input type="number" id="pdv-amount-received" min="0" step="0.01" placeholder="0,00" [ngModel]="amountReceived()" (ngModelChange)="amountReceived.set($event ?? 0)">
+          <div class="pdv-modal-field">
+            <span class="pdv-modal-field-label">Forma de pagamento</span>
+            <div class="pdv-payment-cards" role="group" aria-label="Selecione a forma de pagamento">
+              @for (opt of paymentMethodOptions; track opt.id) {
+                <button
+                  type="button"
+                  class="pdv-payment-card"
+                  [class.pdv-payment-card--selected]="paymentMethod() === opt.id"
+                  (click)="paymentMethod.set(opt.id)"
+                  [attr.aria-pressed]="paymentMethod() === opt.id"
+                  [attr.aria-label]="opt.label"
+                >
+                  <lucide-angular [name]="opt.icon" [size]="24" aria-hidden="true" class="pdv-payment-card-icon"></lucide-angular>
+                  <span class="pdv-payment-card-label">{{ opt.label }}</span>
+                </button>
+              }
             </div>
-            @let change = changeAmount();
-            @if (change != null && change >= 0) {
-              <p class="pdv-modal-change">Troco: <strong>{{ cart.money(change) }}</strong></p>
-            }
-          }
+          </div>
+          <div class="pdv-modal-field">
+            <label for="pdv-amount-received">Valor recebido (R$)</label>
+            <input
+              type="number"
+              id="pdv-amount-received"
+              min="0"
+              step="0.01"
+              placeholder="0,00"
+              [ngModel]="amountReceived()"
+              (ngModelChange)="setAmountReceived($event)"
+              [disabled]="paymentMethod() !== 'dinheiro'"
+            >
+          </div>
+          @let change = changeAmount();
+          <p class="pdv-modal-change" [class.pdv-modal-change--muted]="paymentMethod() !== 'dinheiro' || change == null || change < 0">
+            Troco: <strong>@if (paymentMethod() === 'dinheiro' && change != null && change >= 0) { {{ cart.money(change) }} } @else { — }</strong>
+          </p>
           @if (paymentError()) {
             <p class="pdv-modal-error" role="alert">{{ paymentError() }}</p>
           }

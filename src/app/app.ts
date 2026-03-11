@@ -70,8 +70,8 @@ export class App implements OnInit {
   protected readonly themeOptions: Array<{ id: 'light' | 'dark' | 'green-light' | 'green-dark'; label: string; icon: string }> = [
     { id: 'light', label: 'Rosa (claro)', icon: 'sun' },
     { id: 'dark', label: 'Rosa (escuro)', icon: 'moon' },
-    { id: 'green-light', label: 'Verde (claro)', icon: 'leaf' },
-    { id: 'green-dark', label: 'Verde (escuro)', icon: 'sprout' },
+    { id: 'green-light', label: 'Neutro (claro)', icon: 'circle' },
+    { id: 'green-dark', label: 'Neutro (escuro)', icon: 'circle' },
   ];
 
   private readStoredTheme(): 'light' | 'dark' | 'green-light' | 'green-dark' {

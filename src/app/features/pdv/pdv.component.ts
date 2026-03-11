@@ -2,7 +2,7 @@ import { Component, effect, inject, OnInit, OnDestroy, signal, computed, viewChi
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
-import { PdvStateService } from '../../core/pdv-state.service';
+import { PdvStateService, PAYMENT_METHOD_LABELS, type SalePaymentMethod } from '../../core/pdv-state.service';
 import { ItemsCatalogService, type CatalogItem, PDV_CATEGORIES, type PdvCategoryId } from '../../core/items-catalog.service';
 import { PdvCartService, type CartLineItem } from '../../core/pdv-cart.service';
 import { SidebarSubmenuService } from '../../core/sidebar-submenu.service';
@@ -96,8 +96,23 @@ export class PdvComponent implements OnInit, OnDestroy {
   protected readonly codeInput = signal('');
   protected readonly showPaymentModal = signal(false);
   protected readonly showDiscountModal = signal(false);
-  protected readonly paymentMethod = signal<'dinheiro' | 'debito' | 'credito' | 'pix' | 'outros'>('dinheiro');
+  protected readonly paymentMethod = signal<SalePaymentMethod>('dinheiro');
+  /** Opções de forma de pagamento para os cards do modal. */
+  protected readonly paymentMethodOptions: Array<{ id: SalePaymentMethod; label: string; icon: string }> = [
+    { id: 'dinheiro', label: PAYMENT_METHOD_LABELS.dinheiro, icon: 'dollar-sign' },
+    { id: 'debito', label: PAYMENT_METHOD_LABELS.debito, icon: 'credit-card' },
+    { id: 'credito', label: PAYMENT_METHOD_LABELS.credito, icon: 'credit-card' },
+    { id: 'pix', label: PAYMENT_METHOD_LABELS.pix, icon: 'zap' },
+    { id: 'outros', label: PAYMENT_METHOD_LABELS.outros, icon: 'tag' },
+  ];
   protected readonly amountReceived = signal<number>(0);
+
+  /** Define o valor recebido arredondado para no máximo 2 casas decimais. */
+  protected setAmountReceived(value: string | number | null | undefined): void {
+    const n = value === null || value === undefined || value === '' ? 0 : Number(value);
+    const rounded = Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : 0;
+    this.amountReceived.set(rounded);
+  }
   protected readonly discountInput = signal<number>(0);
   protected readonly discountPctInput = signal<number>(0);
   protected readonly discountType = signal<'value' | 'pct'>('value');
@@ -232,9 +247,16 @@ export class PdvComponent implements OnInit, OnDestroy {
     }
   }
 
-  protected onCategoryDragOver(event: DragEvent, targetId: PdvCategoryId): void {
+  protected onCategoryDragOver(event: DragEvent): void {
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+  }
+
+  /** Reordena no drop: a categoria solta ocupa o índice da posição alvo; as demais ficam na ordem atual. */
+  protected onCategoryDrop(event: DragEvent, targetId: PdvCategoryId): void {
     event.preventDefault();
     const sourceId = this.draggingCategoryId();
+    this.draggingCategoryId.set(null);
     if (!sourceId || sourceId === targetId) return;
     const order = [...this.categoriesOrder()];
     const fromIdx = order.indexOf(sourceId);
@@ -372,7 +394,7 @@ export class PdvComponent implements OnInit, OnDestroy {
 
   protected openPaymentModal(): void {
     this.paymentError.set(null);
-    this.amountReceived.set(this.cart.total());
+    this.setAmountReceived(this.cart.total());
     this.showPaymentModal.set(true);
   }
 

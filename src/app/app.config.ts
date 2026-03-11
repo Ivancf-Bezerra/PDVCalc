@@ -57,6 +57,7 @@ import {
   Hash,
   List,
   Layers,
+  CreditCard,
 } from 'lucide-angular';
 
 import { routes } from './app.routes';
@@ -122,6 +123,7 @@ export const appConfig: ApplicationConfig = {
         Hash,
         List,
         Layers,
+        CreditCard,
       })
     )
   ]
