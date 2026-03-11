@@ -754,7 +754,38 @@ $select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
 .pdv-input-qty { width: 4rem; }
 .pdv-table-items { min-width: 52rem; }
 .pdv-table-cadastro { min-width: 72rem; }
-.pdv-table-wrap--scroll { overflow-x: auto; }
+/* Tabela Cadastro de Produtos: menos espaçamento entre colunas */
+.pdv-page .pdv-table.pdv-table-cadastro th,
+.pdv-page .pdv-table.pdv-table-cadastro td {
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
+}
+/* Inputs da tabela Cadastro de Produtos: largura para não cortar valores sem exagerar */
+.pdv-page .pdv-table.pdv-table-cadastro td input.pdv-input-inline {
+  min-width: 6.5rem;
+  width: 6.5rem;
+  box-sizing: border-box;
+}
+.pdv-page .pdv-table.pdv-table-cadastro td input.pdv-input-qty {
+  min-width: 4.5rem;
+  width: 4.5rem;
+  box-sizing: border-box;
+}
+.pdv-page .pdv-table.pdv-table-cadastro td input.pdv-input-notes {
+  min-width: 6rem;
+  width: 100%;
+  max-width: 10rem;
+  box-sizing: border-box;
+}
+/* Rolagem horizontal em telas menores: container limita largura e permite scroll */
+.pdv-table-wrap--scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
+}
 
 /* BD ITEMS: bloco Adicionar produto de fornecedor */
 .pdv-bd-block {
@@ -1275,9 +1306,13 @@ $select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
 .pdv-page .pdv-table-wrap {
   overflow-x: auto;
   overflow-y: visible;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   border-radius: var(--hy-radius-xl);
   border: 1px solid var(--hy-table-row-border);
   background: var(--hy-bg-card);
+  -webkit-overflow-scrolling: touch;
 }
 /* Altura mínima = 5 linhas apenas quando a página atual tem menos de 5 itens */
 .pdv-page .pdv-table-wrap.table-min-5-rows {
